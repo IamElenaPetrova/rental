@@ -123,6 +123,7 @@ class BookingAdmin(admin.ModelAdmin):
                 'total_paid_display',
                 'currency',
                 'comment',
+                'contract',
             ),
         }),
         ('Audit', {

@@ -44,7 +44,7 @@ class CarPhotoInline(admin.TabularInline):
 
 @admin.register(Car)
 class CarAdmin(admin.ModelAdmin):
-    list_display = ('name', 'plate_number', 'is_active', 'created_at', 'created_by')
+    list_display = ('name', 'plate_number', 'is_active', 'owners_display', 'created_at')
     list_filter = ('is_active',)
     search_fields = ('name', 'plate_number')
     filter_vertical = ('owners',)
@@ -59,6 +59,14 @@ class CarAdmin(admin.ModelAdmin):
             'classes': ('collapse',),
         }),
     )
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).prefetch_related('owners')
+
+    def owners_display(self, obj):
+        return ', '.join(str(u) for u in obj.owners.all()) or '—'
+
+    owners_display.short_description = 'Owners'
 
     def save_model(self, request, obj, form, change):
         if not change:

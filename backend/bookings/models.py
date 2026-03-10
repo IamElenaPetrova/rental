@@ -104,6 +104,17 @@ class Booking(BaseModel):
         blank=True,
         null=True,
     )
+    contract = models.FileField(
+        upload_to='bookings/%Y/%m/',
+        verbose_name='Contract',
+        blank=True,
+        null=True,
+        validators=[
+            FileExtensionValidator(
+                allowed_extensions=[e.lstrip('.') for e in ALLOWED_UPLOAD_EXTENSIONS]
+            ),
+        ],
+    )
 
     class Meta:
         verbose_name = 'Booking'
@@ -134,3 +145,16 @@ class Booking(BaseModel):
             raise ValidationError(
                 format_overlapping_bookings_message(overlapping)
             )
+
+    def save(self, *args, **kwargs):
+        if self.contract:
+            try:
+                raw = self.contract.read()
+                if raw:
+                    content, name = process_uploaded_file(
+                        raw, self.contract.name, max_side=1600, quality=75
+                    )
+                    self.contract.save(name, ContentFile(content), save=False)
+            except Exception:
+                pass
+        super().save(*args, **kwargs)
