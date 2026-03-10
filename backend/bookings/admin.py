@@ -100,7 +100,7 @@ class BookingAdmin(admin.ModelAdmin):
         return f'{obj.rent_amount} {obj.currency}'
 
     rent_amount_display.short_description = 'Rent amount'
-    list_filter = (PaymentStatusFilter, 'currency',)
+    list_filter = (PaymentStatusFilter, 'currency', 'car',)
     search_fields = ('renter__first_name', 'renter__last_name', 'renter__phone')
     inlines = (IncomeInline,)
     autocomplete_fields = ('renter',)
