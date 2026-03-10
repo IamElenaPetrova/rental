@@ -1,8 +1,11 @@
 from django.core.exceptions import ValidationError
+from django.core.files.base import ContentFile
+from django.core.validators import FileExtensionValidator
 from django.db import models
 
 from core.constants import SYSTEM_BASE_CURRENCY
 from core.models import BaseModel
+from core.services import ALLOWED_UPLOAD_EXTENSIONS, process_uploaded_file
 from fleet.models import Car
 
 
@@ -24,6 +27,17 @@ class Renter(models.Model):
     last_name = models.CharField(max_length=255, verbose_name='Last name')
     phone = models.CharField(max_length=32, verbose_name='Phone')
     comment = models.TextField(verbose_name='Comment', blank=True)
+    document = models.FileField(
+        upload_to='renters/%Y/%m/',
+        verbose_name='Document',
+        blank=True,
+        null=True,
+        validators=[
+            FileExtensionValidator(
+                allowed_extensions=[e.lstrip('.') for e in ALLOWED_UPLOAD_EXTENSIONS]
+            ),
+        ],
+    )
 
     class Meta:
         verbose_name = 'Renter'
@@ -32,6 +46,19 @@ class Renter(models.Model):
 
     def __str__(self) -> str:
         return f'{self.last_name} {self.first_name}'
+
+    def save(self, *args, **kwargs):
+        if self.document:
+            try:
+                raw = self.document.read()
+                if raw:
+                    content, name = process_uploaded_file(
+                        raw, self.document.name, max_side=1600, quality=75
+                    )
+                    self.document.save(name, ContentFile(content), save=False)
+            except Exception:
+                pass
+        super().save(*args, **kwargs)
 
 
 class Booking(BaseModel):

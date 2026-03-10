@@ -11,7 +11,7 @@ from bookings.services import (
 class RenterSerializer(serializers.ModelSerializer):
     class Meta:
         model = Renter
-        fields = ('id', 'first_name', 'last_name', 'phone', 'comment')
+        fields = ('id', 'first_name', 'last_name', 'phone', 'comment', 'document')
 
 
 class BookingReadSerializer(serializers.ModelSerializer):

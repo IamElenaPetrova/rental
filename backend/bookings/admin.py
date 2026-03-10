@@ -79,6 +79,7 @@ class IncomeInline(admin.TabularInline):
 class RenterAdmin(admin.ModelAdmin):
     list_display = ('last_name', 'first_name', 'phone')
     search_fields = ('first_name', 'last_name', 'phone')
+    fields = ('first_name', 'last_name', 'phone', 'comment', 'document')
 
 
 @admin.register(Booking)
