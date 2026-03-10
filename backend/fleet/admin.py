@@ -47,9 +47,9 @@ class CarAdmin(admin.ModelAdmin):
     list_display = ('name', 'plate_number', 'is_active', 'created_at', 'created_by')
     list_filter = ('is_active',)
     search_fields = ('name', 'plate_number')
-    filter_horizontal = ('owners',)
+    filter_vertical = ('owners',)
     readonly_fields = ('created_at', 'updated_at', 'created_by', 'updated_by')
-    inlines = (ExpenseInline, CarInsuranceInline, CarPhotoInline,)
+    inlines = (CarInsuranceInline, CarPhotoInline, ExpenseInline,)
     fieldsets = (
         (None, {
             'fields': ('name', 'plate_number', 'owners', 'is_active'),

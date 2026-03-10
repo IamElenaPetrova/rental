@@ -146,8 +146,6 @@ class Expense(BaseModel):
         max_digits=10,
         decimal_places=2,
         verbose_name='Expense amount',
-        null=True,
-        blank=True,
     )
     currency = models.CharField(
         max_length=4,
