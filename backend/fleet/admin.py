@@ -1,6 +1,6 @@
 from django.contrib import admin
 from finance.models import Expense
-from .models import Car, InsuranceCompany, CarInsurance
+from .models import Car, CarPhoto, InsuranceCompany, CarInsurance
 
 
 class ExpenseInline(admin.TabularInline):
@@ -33,6 +33,15 @@ class CarInsuranceInline(admin.TabularInline):
     show_change_link = True
 
 
+class CarPhotoInline(admin.TabularInline):
+    model = CarPhoto
+    fk_name = 'car'
+    extra = 0
+    fields = ('photo',)
+    verbose_name = 'Attachment'
+    verbose_name_plural = 'Attachments'
+
+
 @admin.register(Car)
 class CarAdmin(admin.ModelAdmin):
     list_display = ('name', 'plate_number', 'is_active', 'created_at', 'created_by')
@@ -40,7 +49,7 @@ class CarAdmin(admin.ModelAdmin):
     search_fields = ('name', 'plate_number')
     filter_horizontal = ('owners',)
     readonly_fields = ('created_at', 'updated_at', 'created_by', 'updated_by')
-    inlines = (ExpenseInline, CarInsuranceInline,)
+    inlines = (ExpenseInline, CarInsuranceInline, CarPhotoInline,)
     fieldsets = (
         (None, {
             'fields': ('name', 'plate_number', 'owners', 'is_active'),

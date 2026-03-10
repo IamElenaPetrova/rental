@@ -1,7 +1,10 @@
 from django.contrib.auth import get_user_model
+from django.core.files.base import ContentFile
+from django.core.validators import FileExtensionValidator
 from django.db import models
 
 from core.models import BaseModel
+from core.services import ALLOWED_UPLOAD_EXTENSIONS, process_uploaded_file
 
 User = get_user_model()
 
@@ -81,3 +84,37 @@ class CarInsurance(models.Model):
 
     def __str__(self) -> str:
         return f'{self.insurer} — {self.policy_number} ({self.car})'
+
+
+class CarPhoto(models.Model):
+    car = models.ForeignKey(
+        Car,
+        on_delete=models.CASCADE,
+        related_name='photos',
+        verbose_name='Car',
+    )
+    photo = models.FileField(
+        upload_to='cars/%Y/%m/',
+        verbose_name='Attachment',
+        validators=[
+            FileExtensionValidator(allowed_extensions=[e.lstrip('.') for e in ALLOWED_UPLOAD_EXTENSIONS]),
+        ],
+    )
+
+    class Meta:
+        verbose_name = 'Car attachment'
+        verbose_name_plural = 'Car attachments'
+
+    def __str__(self) -> str:
+        return f'Attachment for car #{self.car_id}'
+
+    def save(self, *args, **kwargs):
+        if self.photo:
+            try:
+                raw = self.photo.read()
+                if raw:
+                    content, name = process_uploaded_file(raw, self.photo.name, max_side=1600, quality=75)
+                    self.photo.save(name, ContentFile(content), save=False)
+            except Exception:
+                pass
+        super().save(*args, **kwargs)
