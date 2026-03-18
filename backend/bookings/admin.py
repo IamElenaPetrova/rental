@@ -24,10 +24,15 @@ class PaymentStatusFilter(admin.SimpleListFilter):
     def queryset(self, request, queryset):
         if self.value() == 'paid':
             return queryset.annotate(
-                _paid=Coalesce(F('_total_paid'), Value(Decimal('0'), output_field=DecimalField()))
+                _paid=Coalesce(
+                    F('_total_paid'),
+                    Value(Decimal('0'), output_field=DecimalField()),
+                )
             ).filter(_paid__gte=F('rent_amount'))
         if self.value() == 'unpaid':
-            return queryset.filter(Q(_total_paid__isnull=True) | Q(_total_paid=0))
+            return queryset.filter(
+                Q(_total_paid__isnull=True) | Q(_total_paid=0)
+            )
         if self.value() == 'partially_paid':
             return queryset.filter(
                 _total_paid__isnull=False,
@@ -49,7 +54,11 @@ class IncomeInline(admin.TabularInline):
         'received_by',
         'photos_link',
     )
-    readonly_fields = ('amount_currency_display', 'amount_in_booking_currency', 'photos_link',)
+    readonly_fields = (
+        'amount_currency_display',
+        'amount_in_booking_currency',
+        'photos_link',
+    )
     autocomplete_fields = ('received_by',)
     show_change_link = True
 
@@ -90,6 +99,8 @@ class BookingAdmin(admin.ModelAdmin):
         'renter',
         'start_date',
         'end_date',
+        'start_mileage',
+        'end_mileage',
         'rent_amount_display',
         'display_total_paid',
     )
@@ -101,7 +112,11 @@ class BookingAdmin(admin.ModelAdmin):
 
     rent_amount_display.short_description = 'Rent amount'
     list_filter = (PaymentStatusFilter, 'currency', 'car',)
-    search_fields = ('renter__first_name', 'renter__last_name', 'renter__phone')
+    search_fields = (
+        'renter__first_name',
+        'renter__last_name',
+        'renter__phone',
+    )
     inlines = (IncomeInline,)
     autocomplete_fields = ('renter',)
     readonly_fields = (
@@ -118,7 +133,9 @@ class BookingAdmin(admin.ModelAdmin):
                 'car',
                 'renter',
                 'start_date',
+                'start_mileage',
                 'end_date',
+                'end_mileage',
                 'rent_amount',
                 'total_paid_display',
                 'currency',
@@ -134,7 +151,9 @@ class BookingAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        return qs.annotate(_total_paid=Sum('incomes__amount_in_booking_currency'))
+        return qs.annotate(
+            _total_paid=Sum('incomes__amount_in_booking_currency')
+        )
 
     def display_total_paid(self, obj):
         total = getattr(obj, '_total_paid', None)

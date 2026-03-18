@@ -42,7 +42,10 @@ class Income(BaseModel):
         max_digits=12,
         decimal_places=6,
         verbose_name='Rate',
-        help_text='Payment curr. per 1 booking curr. (e.g. 60). Save to recalc.',
+        help_text=(
+            'Payment curr. per 1 booking curr. (e.g. 60). '
+            'Save to recalc.'
+        ),
         null=True,
         blank=True,
     )
@@ -50,7 +53,9 @@ class Income(BaseModel):
         max_digits=10,
         decimal_places=2,
         verbose_name='Amount in booking currency',
-        help_text='Calculated automatically on save using payment amount and rate.',
+        help_text=(
+            'Calculated automatically on save using payment amount and rate.'
+        ),
     )
 
     received_by = models.ForeignKey(
@@ -79,7 +84,10 @@ class Income(BaseModel):
             self.amount_in_booking_currency = self.amount
         else:
             if self.exchange_rate is None:
-                raise ValueError('exchange_rate обязателен, если валюта оплаты отличается от валюты бронирования')
+                raise ValueError(
+                    'exchange_rate обязателен, если валюта оплаты отличается от '
+                    'валюты бронирования'
+                )
             self.amount_in_booking_currency = (
                 Decimal(self.amount) / Decimal(self.exchange_rate)
             ).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
@@ -94,11 +102,20 @@ class IncomePhoto(models.Model):
         related_name='photos',
         verbose_name='Payment',
     )
+    doc_type = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name='Document type',
+    )
     photo = models.FileField(
         upload_to='incomes/%Y/%m/',
         verbose_name='Attachment',
         validators=[
-            FileExtensionValidator(allowed_extensions=[e.lstrip('.') for e in ALLOWED_UPLOAD_EXTENSIONS]),
+            FileExtensionValidator(
+                allowed_extensions=[
+                    e.lstrip('.') for e in ALLOWED_UPLOAD_EXTENSIONS
+                ]
+            ),
         ],
     )
 
@@ -114,7 +131,12 @@ class IncomePhoto(models.Model):
             try:
                 raw = self.photo.read()
                 if raw:
-                    content, name = process_uploaded_file(raw, self.photo.name, max_side=1600, quality=75)
+                    content, name = process_uploaded_file(
+                        raw,
+                        self.photo.name,
+                        max_side=1600,
+                        quality=75,
+                    )
                     self.photo.save(name, ContentFile(content), save=False)
             except Exception:
                 pass
@@ -198,7 +220,8 @@ class Expense(BaseModel):
             else:
                 if self.exchange_rate is None:
                     raise ValueError(
-                        'exchange_rate обязателен, если валюта расхода отличается от базовой валюты'
+                        'exchange_rate обязателен, если валюта расхода отличается от '
+                        'базовой валюты'
                     )
                 self.amount_in_base_currency = (
                     Decimal(self.amount) / Decimal(self.exchange_rate)
@@ -213,11 +236,20 @@ class ExpensePhoto(models.Model):
         related_name='photos',
         verbose_name='Expense',
     )
+    doc_type = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name='Document type',
+    )
     photo = models.FileField(
         upload_to='expenses/%Y/%m/',
         verbose_name='Attachment',
         validators=[
-            FileExtensionValidator(allowed_extensions=[e.lstrip('.') for e in ALLOWED_UPLOAD_EXTENSIONS]),
+            FileExtensionValidator(
+                allowed_extensions=[
+                    e.lstrip('.') for e in ALLOWED_UPLOAD_EXTENSIONS
+                ]
+            ),
         ],
     )
 
@@ -233,7 +265,12 @@ class ExpensePhoto(models.Model):
             try:
                 raw = self.photo.read()
                 if raw:
-                    content, name = process_uploaded_file(raw, self.photo.name, max_side=1600, quality=75)
+                    content, name = process_uploaded_file(
+                        raw,
+                        self.photo.name,
+                        max_side=1600,
+                        quality=75,
+                    )
                     self.photo.save(name, ContentFile(content), save=False)
             except Exception:
                 pass

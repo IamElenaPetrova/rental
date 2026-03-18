@@ -34,7 +34,9 @@ class Renter(models.Model):
         null=True,
         validators=[
             FileExtensionValidator(
-                allowed_extensions=[e.lstrip('.') for e in ALLOWED_UPLOAD_EXTENSIONS]
+                allowed_extensions=[
+                    e.lstrip('.') for e in ALLOWED_UPLOAD_EXTENSIONS
+                ]
             ),
         ],
     )
@@ -81,6 +83,16 @@ class Booking(BaseModel):
     end_date = models.DateField(
         verbose_name='End date',
     )
+    start_mileage = models.PositiveIntegerField(
+        blank=True,
+        null=True,
+        verbose_name='Start mileage',
+    )
+    end_mileage = models.PositiveIntegerField(
+        blank=True,
+        null=True,
+        verbose_name='End mileage',
+    )
 
     rent_amount = models.DecimalField(
         max_digits=10,
@@ -111,7 +123,9 @@ class Booking(BaseModel):
         null=True,
         validators=[
             FileExtensionValidator(
-                allowed_extensions=[e.lstrip('.') for e in ALLOWED_UPLOAD_EXTENSIONS]
+                allowed_extensions=[
+                    e.lstrip('.') for e in ALLOWED_UPLOAD_EXTENSIONS
+                ]
             ),
         ],
     )
@@ -121,7 +135,9 @@ class Booking(BaseModel):
         verbose_name_plural = 'Bookings'
 
     def __str__(self) -> str:
-        start = self.start_date.strftime('%d %b %y') if self.start_date else '—'
+        start = (
+            self.start_date.strftime('%d %b %y') if self.start_date else '—'
+        )
         end = self.end_date.strftime('%d %b %y') if self.end_date else '—'
         dates = f'{start}–{end}'
         return f'{self.car} - {self.renter} ({dates})'
@@ -134,6 +150,15 @@ class Booking(BaseModel):
 
         if not self.car_id or not self.start_date or not self.end_date:
             return
+
+        if (
+            self.start_mileage is not None
+            and self.end_mileage is not None
+            and self.end_mileage < self.start_mileage
+        ):
+            raise ValidationError(
+                {'end_mileage': 'End mileage must be >= start mileage'}
+            )
 
         overlapping = get_overlapping_bookings(
             car=self.car,
