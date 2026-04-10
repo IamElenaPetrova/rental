@@ -23,5 +23,5 @@ def format_overlapping_bookings_message(queryset):
     parts = []
     for b in queryset:
         dates = f"{b.start_date:%d.%m.%Y} – {b.end_date:%d.%m.%Y}"
-        parts.append(f"{b.renter_name} ({dates})")
+        parts.append(f"{b.renter.last_name} {b.renter.first_name} ({dates})")
     return "Пересечение с бронированием: " + ", ".join(parts)
