@@ -4,7 +4,11 @@ from django.core.validators import FileExtensionValidator
 from django.db import models
 
 from core.models import BaseModel
-from core.services import ALLOWED_UPLOAD_EXTENSIONS, IMAGE_EXTENSIONS, process_uploaded_file
+from core.services import (
+    ALLOWED_UPLOAD_EXTENSIONS,
+    IMAGE_EXTENSIONS,
+    process_uploaded_file,
+)
 
 User = get_user_model()
 
@@ -53,7 +57,10 @@ class Car(BaseModel):
                 raw = self.avatar.read()
                 if raw:
                     content, name = process_uploaded_file(
-                        raw, self.avatar.name, max_side=1600, quality=75
+                        raw,
+                        self.avatar.name,
+                        max_side=1600,
+                        quality=75,
                     )
                     self.avatar.save(name, ContentFile(content), save=False)
             except Exception:
@@ -153,7 +160,12 @@ class CarInsuranceDocument(models.Model):
         upload_to='insurances/%Y/%m/',
         verbose_name='Attachment',
         validators=[
-            FileExtensionValidator(allowed_extensions=[e.lstrip('.') for e in ALLOWED_UPLOAD_EXTENSIONS]),
+            FileExtensionValidator(
+                allowed_extensions=[
+                    e.lstrip('.')
+                    for e in ALLOWED_UPLOAD_EXTENSIONS
+                ]
+            ),
         ],
     )
 
@@ -173,7 +185,10 @@ class CarInsuranceDocument(models.Model):
                     raw = self.file.read()
                     if raw:
                         content, name = process_uploaded_file(
-                            raw, self.file.name, max_side=1600, quality=75
+                            raw,
+                            self.file.name,
+                            max_side=1600,
+                            quality=75,
                         )
                         self.file.save(name, ContentFile(content), save=False)
                 except Exception:
@@ -192,7 +207,12 @@ class CarPhoto(models.Model):
         upload_to='cars/%Y/%m/',
         verbose_name='Attachment',
         validators=[
-            FileExtensionValidator(allowed_extensions=[e.lstrip('.') for e in ALLOWED_UPLOAD_EXTENSIONS]),
+            FileExtensionValidator(
+                allowed_extensions=[
+                    e.lstrip('.')
+                    for e in ALLOWED_UPLOAD_EXTENSIONS
+                ]
+            ),
         ],
     )
 
@@ -208,7 +228,12 @@ class CarPhoto(models.Model):
             try:
                 raw = self.photo.read()
                 if raw:
-                    content, name = process_uploaded_file(raw, self.photo.name, max_side=1600, quality=75)
+                    content, name = process_uploaded_file(
+                        raw,
+                        self.photo.name,
+                        max_side=1600,
+                        quality=75,
+                    )
                     self.photo.save(name, ContentFile(content), save=False)
             except Exception:
                 pass

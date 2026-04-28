@@ -1,8 +1,8 @@
-from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from django.core.validators import FileExtensionValidator
 from django.db import models
 
+from core.choices import Currency
 from core.constants import SYSTEM_BASE_CURRENCY
 from core.models import BaseModel
 from core.services import ALLOWED_UPLOAD_EXTENSIONS, process_uploaded_file
@@ -15,11 +15,6 @@ class BookingStatus(models.TextChoices):
     PAID = 'PAID', 'Paid'
     COMPLETED = 'COMPLETED', 'Completed'
     CANCELLED = 'CANCELLED', 'Cancelled'
-
-
-class Currency(models.TextChoices):
-    USD = 'USD', 'USD'
-    PESO = 'PESO', 'PESO'
 
 
 class Renter(models.Model):
@@ -144,32 +139,21 @@ class Booking(BaseModel):
 
     def clean(self):
         from .services import (
-            format_overlapping_bookings_message,
-            get_overlapping_bookings,
+            validate_date_range,
+            validate_mileage_range,
+            validate_no_overlaps,
         )
-
         if not self.car_id or not self.start_date or not self.end_date:
             return
-
-        if (
-            self.start_mileage is not None
-            and self.end_mileage is not None
-            and self.end_mileage < self.start_mileage
-        ):
-            raise ValidationError(
-                {'end_mileage': 'End mileage must be >= start mileage'}
-            )
-
-        overlapping = get_overlapping_bookings(
-            car=self.car,
+        validate_date_range(self.start_date, self.end_date)
+        validate_mileage_range(self.start_mileage, self.end_mileage)
+        validate_no_overlaps(
+            queryset=Booking.objects.all(),
+            unit_filter={'car': self.car},
             start_date=self.start_date,
             end_date=self.end_date,
             exclude_booking_id=self.pk,
         )
-        if overlapping.exists():
-            raise ValidationError(
-                format_overlapping_bookings_message(overlapping)
-            )
 
     def save(self, *args, **kwargs):
         if self.contract:
