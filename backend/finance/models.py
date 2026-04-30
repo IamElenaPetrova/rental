@@ -19,7 +19,7 @@ class Income(BaseModel):
         Booking,
         on_delete=models.PROTECT,
         related_name='incomes',
-        verbose_name='Booking',
+        verbose_name='Car Booking',
     )
     received_date = models.DateField(
         verbose_name='Date received',
@@ -85,8 +85,8 @@ class Income(BaseModel):
         else:
             if self.exchange_rate is None:
                 raise ValueError(
-                    'exchange_rate обязателен, если валюта оплаты отличается от '
-                    'валюты бронирования'
+                    'Please provide an exchange rate when paying in '
+                    'a different currency.'
                 )
             self.amount_in_booking_currency = (
                 Decimal(self.amount) / Decimal(self.exchange_rate)
@@ -220,8 +220,8 @@ class Expense(BaseModel):
             else:
                 if self.exchange_rate is None:
                     raise ValueError(
-                        'exchange_rate обязателен, если валюта расхода отличается от '
-                        'базовой валюты'
+                        'Please provide an exchange rate when the expense'
+                        ' currency differs from the base currency.'
                     )
                 self.amount_in_base_currency = (
                     Decimal(self.amount) / Decimal(self.exchange_rate)

@@ -23,7 +23,7 @@ def get_overlapping_bookings(
     Universal overlap check:
     start_new <= end_old AND end_new >= start_old
 
-    queryset: QuerySet of booking model (Booking / CarBooking / HouseBooking)
+    queryset: QuerySet of booking model (CarBooking / HouseBooking)
     unit_filter: {'car': car_obj} or {'house': house_obj} or {'car_id': 1}
     """
     qs = queryset.filter(

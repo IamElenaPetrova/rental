@@ -92,7 +92,7 @@ class RenterAdmin(admin.ModelAdmin):
 
 
 @admin.register(Booking)
-class BookingAdmin(admin.ModelAdmin):
+class CarBookingAdmin(admin.ModelAdmin):
     list_display = (
         'id',
         'car',

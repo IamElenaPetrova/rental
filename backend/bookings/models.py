@@ -30,7 +30,8 @@ class Renter(models.Model):
         validators=[
             FileExtensionValidator(
                 allowed_extensions=[
-                    e.lstrip('.') for e in ALLOWED_UPLOAD_EXTENSIONS
+                    e.lstrip('.')
+                    for e in ALLOWED_UPLOAD_EXTENSIONS
                 ]
             ),
         ],
@@ -50,7 +51,10 @@ class Renter(models.Model):
                 raw = self.document.read()
                 if raw:
                     content, name = process_uploaded_file(
-                        raw, self.document.name, max_side=1600, quality=75
+                        raw,
+                        self.document.name,
+                        max_side=1600,
+                        quality=75,
                     )
                     self.document.save(name, ContentFile(content), save=False)
             except Exception:
@@ -58,37 +62,15 @@ class Renter(models.Model):
         super().save(*args, **kwargs)
 
 
-class Booking(BaseModel):
-    car = models.ForeignKey(
-        Car,
-        on_delete=models.PROTECT,
-        related_name='bookings',
-        verbose_name='Car',
-    )
+class AbstractBooking(BaseModel):
     renter = models.ForeignKey(
         Renter,
         on_delete=models.PROTECT,
-        related_name='bookings',
+        related_name='%(class)ss',
         verbose_name='Renter',
     )
-
-    start_date = models.DateField(
-        verbose_name='Start date',
-    )
-    end_date = models.DateField(
-        verbose_name='End date',
-    )
-    start_mileage = models.PositiveIntegerField(
-        blank=True,
-        null=True,
-        verbose_name='Start mileage',
-    )
-    end_mileage = models.PositiveIntegerField(
-        blank=True,
-        null=True,
-        verbose_name='End mileage',
-    )
-
+    start_date = models.DateField(verbose_name='Start date')
+    end_date = models.DateField(verbose_name='End date')
     rent_amount = models.DecimalField(
         max_digits=10,
         decimal_places=2,
@@ -119,15 +101,89 @@ class Booking(BaseModel):
         validators=[
             FileExtensionValidator(
                 allowed_extensions=[
-                    e.lstrip('.') for e in ALLOWED_UPLOAD_EXTENSIONS
+                    e.lstrip('.')
+                    for e in ALLOWED_UPLOAD_EXTENSIONS
                 ]
             ),
         ],
     )
 
     class Meta:
-        verbose_name = 'Booking'
-        verbose_name_plural = 'Bookings'
+        abstract = True
+
+    def get_overlap_queryset(self):
+        raise NotImplementedError
+
+    def get_overlap_unit_filter(self):
+        raise NotImplementedError
+
+    def validate_domain_specific(self):
+        pass
+
+    def clean(self):
+        from .services import (
+            validate_date_range,
+            validate_no_overlaps,
+        )
+
+        if not self.start_date or not self.end_date:
+            return
+
+        validate_date_range(self.start_date, self.end_date)
+
+        unit_filter = self.get_overlap_unit_filter()
+        if not unit_filter:
+            return
+
+        validate_no_overlaps(
+            queryset=self.get_overlap_queryset(),
+            unit_filter=unit_filter,
+            start_date=self.start_date,
+            end_date=self.end_date,
+            exclude_booking_id=self.pk,
+        )
+
+        self.validate_domain_specific()
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        if self.contract:
+            try:
+                raw = self.contract.read()
+                if raw:
+                    content, name = process_uploaded_file(
+                        raw,
+                        self.contract.name,
+                        max_side=1600,
+                        quality=75,
+                    )
+                    self.contract.save(name, ContentFile(content), save=False)
+            except Exception:
+                pass
+        super().save(*args, **kwargs)
+
+
+class Booking(AbstractBooking):
+    car = models.ForeignKey(
+        Car,
+        on_delete=models.PROTECT,
+        related_name='bookings',
+        verbose_name='Car',
+    )
+    start_mileage = models.PositiveIntegerField(
+        blank=True,
+        null=True,
+        verbose_name='Start mileage',
+    )
+    end_mileage = models.PositiveIntegerField(
+        blank=True,
+        null=True,
+        verbose_name='End mileage',
+    )
+
+    class Meta:
+        verbose_name = 'Car booking'
+        verbose_name_plural = 'Car bookings'
 
     def __str__(self) -> str:
         start = (
@@ -137,33 +193,15 @@ class Booking(BaseModel):
         dates = f'{start}–{end}'
         return f'{self.car} - {self.renter} ({dates})'
 
-    def clean(self):
-        from .services import (
-            validate_date_range,
-            validate_mileage_range,
-            validate_no_overlaps,
-        )
-        if not self.car_id or not self.start_date or not self.end_date:
-            return
-        validate_date_range(self.start_date, self.end_date)
-        validate_mileage_range(self.start_mileage, self.end_mileage)
-        validate_no_overlaps(
-            queryset=Booking.objects.all(),
-            unit_filter={'car': self.car},
-            start_date=self.start_date,
-            end_date=self.end_date,
-            exclude_booking_id=self.pk,
-        )
+    def get_overlap_queryset(self):
+        return Booking.objects.all()
 
-    def save(self, *args, **kwargs):
-        if self.contract:
-            try:
-                raw = self.contract.read()
-                if raw:
-                    content, name = process_uploaded_file(
-                        raw, self.contract.name, max_side=1600, quality=75
-                    )
-                    self.contract.save(name, ContentFile(content), save=False)
-            except Exception:
-                pass
-        super().save(*args, **kwargs)
+    def get_overlap_unit_filter(self):
+        if not self.car_id:
+            return {}
+        return {'car': self.car}
+
+    def validate_domain_specific(self):
+        from .services import validate_mileage_range
+
+        validate_mileage_range(self.start_mileage, self.end_mileage)
