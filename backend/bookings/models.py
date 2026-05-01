@@ -146,7 +146,7 @@ class AbstractBooking(BaseModel):
         self.validate_domain_specific()
 
     def save(self, *args, **kwargs):
-        self.full_clean()
+        # self.full_clean()
         if self.contract:
             try:
                 raw = self.contract.read()
@@ -199,9 +199,10 @@ class Booking(AbstractBooking):
     def get_overlap_unit_filter(self):
         if not self.car_id:
             return {}
-        return {'car': self.car}
+        return {'car_id': self.car_id}
 
     def validate_domain_specific(self):
-        from .services import validate_mileage_range
+        from .services import validate_car_is_active, validate_mileage_range
 
         validate_mileage_range(self.start_mileage, self.end_mileage)
+        validate_car_is_active(self.car_id)
