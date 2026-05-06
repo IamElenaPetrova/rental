@@ -1,6 +1,9 @@
+from django.contrib.postgres.constraints import ExclusionConstraint
+from django.contrib.postgres.fields import RangeOperators
 from django.core.files.base import ContentFile
 from django.core.validators import FileExtensionValidator
-from django.db import models
+from django.db import DEFAULT_DB_ALIAS, models
+from django.db.models import F, Func, Q
 
 from core.choices import Currency
 from core.constants import SYSTEM_BASE_CURRENCY
@@ -11,9 +14,9 @@ from fleet.models import Car
 
 class BookingStatus(models.TextChoices):
     CONFIRMED = 'CONFIRMED', 'Confirmed'
-    PARTIALLY_PAID = 'PARTIALLY_PAID', 'Partially paid'
-    PAID = 'PAID', 'Paid'
-    COMPLETED = 'COMPLETED', 'Completed'
+    #PARTIALLY_PAID = 'PARTIALLY_PAID', 'Partially paid'
+    #PAID = 'PAID', 'Paid'
+    #COMPLETED = 'COMPLETED', 'Completed'
     CANCELLED = 'CANCELLED', 'Cancelled'
 
 
@@ -63,6 +66,8 @@ class Renter(models.Model):
 
 
 class AbstractBooking(BaseModel):
+    SKIP_PRECHECK_CONSTRAINTS = set()
+
     renter = models.ForeignKey(
         Renter,
         on_delete=models.PROTECT,
@@ -111,6 +116,45 @@ class AbstractBooking(BaseModel):
     class Meta:
         abstract = True
 
+    @classmethod
+    def build_no_overlap_constraint(
+        cls, unit_field: str, name: str
+    ) -> ExclusionConstraint:
+        """
+        unit_field: имя FK-поля ресурса ('car', 'house', ...)
+        name: уникальное имя constraints
+        """
+        return ExclusionConstraint(
+            name=name,
+            expressions=[
+                (unit_field, RangeOperators.EQUAL),
+                (
+                    Func(
+                        F('start_date'),
+                        F('end_date'),
+                        function='daterange',
+                        template="%(function)s(%(expressions)s, '[]')",  # включительные границы
+                    ),
+                    RangeOperators.OVERLAPS,
+                ),
+            ],
+            condition=~Q(status=BookingStatus.CANCELLED),
+        )
+
+    def validate_constraints(self, exclude=None):
+        constraints = [
+            c for c in self._meta.constraints
+            if c.name not in self.SKIP_PRECHECK_CONSTRAINTS
+        ]
+        using = DEFAULT_DB_ALIAS
+        for constraint in constraints:
+            constraint.validate(
+                model=self.__class__,
+                instance=self,
+                exclude=exclude,
+                using=using,
+            )
+
     def get_overlap_queryset(self):
         raise NotImplementedError
 
@@ -141,6 +185,7 @@ class AbstractBooking(BaseModel):
             start_date=self.start_date,
             end_date=self.end_date,
             exclude_booking_id=self.pk,
+            excluded_statuses=[BookingStatus.CANCELLED],
         )
 
         self.validate_domain_specific()
@@ -164,6 +209,8 @@ class AbstractBooking(BaseModel):
 
 
 class Booking(AbstractBooking):
+    SKIP_PRECHECK_CONSTRAINTS = {'booking_no_overlaps_per_car'}
+
     car = models.ForeignKey(
         Car,
         on_delete=models.PROTECT,
@@ -184,6 +231,12 @@ class Booking(AbstractBooking):
     class Meta:
         verbose_name = 'Car booking'
         verbose_name_plural = 'Car bookings'
+        constraints = [
+            AbstractBooking.build_no_overlap_constraint(
+                unit_field='car',
+                name='booking_no_overlaps_per_car',
+            ),
+        ]
 
     def __str__(self) -> str:
         start = (

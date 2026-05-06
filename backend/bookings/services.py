@@ -20,6 +20,7 @@ def validate_no_overlaps(
     start_date,
     end_date,
     exclude_booking_id=None,
+    excluded_statuses=None,
 ) -> None:
     if not start_date or not end_date:
         return
@@ -29,6 +30,9 @@ def validate_no_overlaps(
         start_date__lte=end_date,
         end_date__gte=start_date,
     )
+
+    if excluded_statuses:
+        qs = qs.exclude(status__in=excluded_statuses)
 
     if exclude_booking_id:
         qs = qs.exclude(pk=exclude_booking_id)

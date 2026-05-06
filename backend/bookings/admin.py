@@ -1,6 +1,8 @@
 from decimal import Decimal
 
 from django.contrib import admin
+from django.core.exceptions import ValidationError
+from django.db import IntegrityError, transaction
 from django.db.models import Sum, F, Q, Value, DecimalField
 from django.db.models.functions import Coalesce
 from django.urls import reverse
@@ -139,6 +141,7 @@ class CarBookingAdmin(admin.ModelAdmin):
                 'rent_amount',
                 'total_paid_display',
                 'currency',
+                'status',
                 'comment',
                 'contract',
             ),
@@ -180,7 +183,15 @@ class CarBookingAdmin(admin.ModelAdmin):
         if not change:
             obj.created_by = request.user
         obj.updated_by = request.user
-        super().save_model(request, obj, form, change)
+        try:
+            with transaction.atomic():
+                super().save_model(request, obj, form, change)
+        except IntegrityError as exc:
+            if 'booking_no_overlaps_per_car' in str(exc):
+                raise ValidationError(
+                    {'start_date': 'This booking overlaps with another booking for this car.'}
+                )
+            raise
 
     def save_formset(self, request, form, formset, change):
         instances = formset.save(commit=False)
