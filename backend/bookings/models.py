@@ -1,6 +1,5 @@
 from django.contrib.postgres.constraints import ExclusionConstraint
 from django.contrib.postgres.fields import RangeOperators
-from django.core.files.base import ContentFile
 from django.core.validators import FileExtensionValidator
 from django.db import DEFAULT_DB_ALIAS, models
 from django.db.models import F, Func, Q
@@ -9,7 +8,7 @@ from core.choices import Currency
 from core.constants import SYSTEM_BASE_CURRENCY
 from core.models import BaseModel
 from core.file_processing import FileProcessOptions, FileProcessingMixin
-from core.services import ALLOWED_UPLOAD_EXTENSIONS, process_uploaded_file
+from core.services import ALLOWED_UPLOAD_EXTENSIONS
 from fleet.models import Car
 
 
@@ -21,7 +20,15 @@ class BookingStatus(models.TextChoices):
     CANCELLED = 'CANCELLED', 'Cancelled'
 
 
-class Renter(models.Model):
+class Renter(FileProcessingMixin, models.Model):
+    FILE_FIELDS = {
+        'document': FileProcessOptions(
+            images_only=False,
+            max_side=1600,
+            quality=75,
+        ),
+    }
+
     first_name = models.CharField(max_length=255, verbose_name='First name')
     last_name = models.CharField(max_length=255, verbose_name='Last name')
     phone = models.CharField(max_length=32, verbose_name='Phone')
@@ -48,22 +55,6 @@ class Renter(models.Model):
 
     def __str__(self) -> str:
         return f'{self.last_name} {self.first_name}'
-
-    def save(self, *args, **kwargs):
-        if self.document:
-            try:
-                raw = self.document.read()
-                if raw:
-                    content, name = process_uploaded_file(
-                        raw,
-                        self.document.name,
-                        max_side=1600,
-                        quality=75,
-                    )
-                    self.document.save(name, ContentFile(content), save=False)
-            except Exception:
-                pass
-        super().save(*args, **kwargs)
 
 
 class AbstractBooking(FileProcessingMixin, BaseModel):
