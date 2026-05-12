@@ -23,7 +23,6 @@ class BookingStatus(models.TextChoices):
 class Renter(FileProcessingMixin, models.Model):
     FILE_FIELDS = {
         'document': FileProcessOptions(
-            images_only=False,
             max_side=1600,
             quality=75,
         ),
@@ -62,7 +61,6 @@ class AbstractBooking(FileProcessingMixin, BaseModel):
 
     FILE_FIELDS = {
         'contract': FileProcessOptions(
-            images_only=False,
             max_side=1600,
             quality=75,
         ),

@@ -1,15 +1,15 @@
 from decimal import Decimal, ROUND_HALF_UP
 
 from django.contrib.auth import get_user_model
-from django.core.files.base import ContentFile
 from django.core.validators import FileExtensionValidator
 from django.db import models
 
 from bookings.models import Booking, Currency
-from core.services import ALLOWED_UPLOAD_EXTENSIONS, process_uploaded_file
-from core.models import BaseModel
-from fleet.models import Car
 from core.constants import SYSTEM_BASE_CURRENCY
+from core.file_processing import FileProcessOptions, FileProcessingMixin
+from core.models import BaseModel
+from core.services import ALLOWED_UPLOAD_EXTENSIONS
+from fleet.models import Car
 
 User = get_user_model()
 
@@ -95,7 +95,14 @@ class Income(BaseModel):
         super().save(*args, **kwargs)
 
 
-class IncomePhoto(models.Model):
+class IncomePhoto(FileProcessingMixin, models.Model):
+    FILE_FIELDS = {
+        'photo': FileProcessOptions(
+            max_side=1600,
+            quality=75,
+        ),
+    }
+
     income = models.ForeignKey(
         Income,
         on_delete=models.CASCADE,
@@ -125,22 +132,6 @@ class IncomePhoto(models.Model):
 
     def __str__(self) -> str:
         return f'Attachment for income #{self.income_id}'
-
-    def save(self, *args, **kwargs):
-        if self.photo:
-            try:
-                raw = self.photo.read()
-                if raw:
-                    content, name = process_uploaded_file(
-                        raw,
-                        self.photo.name,
-                        max_side=1600,
-                        quality=75,
-                    )
-                    self.photo.save(name, ContentFile(content), save=False)
-            except Exception:
-                pass
-        super().save(*args, **kwargs)
 
 
 class Expense(BaseModel):
@@ -229,7 +220,14 @@ class Expense(BaseModel):
         super().save(*args, **kwargs)
 
 
-class ExpensePhoto(models.Model):
+class ExpensePhoto(FileProcessingMixin, models.Model):
+    FILE_FIELDS = {
+        'photo': FileProcessOptions(
+            max_side=1600,
+            quality=75,
+        ),
+    }
+
     expense = models.ForeignKey(
         Expense,
         on_delete=models.CASCADE,
@@ -259,19 +257,3 @@ class ExpensePhoto(models.Model):
 
     def __str__(self) -> str:
         return f'Attachment for expense #{self.expense_id}'
-
-    def save(self, *args, **kwargs):
-        if self.photo:
-            try:
-                raw = self.photo.read()
-                if raw:
-                    content, name = process_uploaded_file(
-                        raw,
-                        self.photo.name,
-                        max_side=1600,
-                        quality=75,
-                    )
-                    self.photo.save(name, ContentFile(content), save=False)
-            except Exception:
-                pass
-        super().save(*args, **kwargs)

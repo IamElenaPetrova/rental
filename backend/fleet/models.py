@@ -1,19 +1,19 @@
 from django.contrib.auth import get_user_model
-from django.core.files.base import ContentFile
 from django.core.validators import FileExtensionValidator
 from django.db import models
 
 from core.models import BaseModel
+from core.file_processing import FileProcessOptions, FileProcessingMixin
 from core.services import (
     ALLOWED_UPLOAD_EXTENSIONS,
-    IMAGE_EXTENSIONS,
-    process_uploaded_file,
+    IMAGE_EXTENSIONS
 )
 
 User = get_user_model()
 
 
-class Car(BaseModel):
+class Car(FileProcessingMixin, BaseModel):
+    FILE_FIELDS = {'avatar': FileProcessOptions(max_side=1600, quality=75)}
     name = models.CharField(
         max_length=255,
         verbose_name='Name',
@@ -50,22 +50,6 @@ class Car(BaseModel):
 
     def __str__(self) -> str:
         return f'{self.name}'
-
-    def save(self, *args, **kwargs):
-        if self.avatar and self.avatar.name:
-            try:
-                raw = self.avatar.read()
-                if raw:
-                    content, name = process_uploaded_file(
-                        raw,
-                        self.avatar.name,
-                        max_side=1600,
-                        quality=75,
-                    )
-                    self.avatar.save(name, ContentFile(content), save=False)
-            except Exception:
-                pass
-        super().save(*args, **kwargs)
 
 
 class CarInspection(models.Model):
@@ -144,7 +128,8 @@ class CarInsurance(models.Model):
         return f'{self.insurer} — {self.policy_number} ({self.car})'
 
 
-class CarInsuranceDocument(models.Model):
+class CarInsuranceDocument(FileProcessingMixin, models.Model):
+    FILE_FIELDS = {'file': FileProcessOptions(max_side=1600, quality=75)}
     insurance = models.ForeignKey(
         CarInsurance,
         on_delete=models.CASCADE,
@@ -177,26 +162,14 @@ class CarInsuranceDocument(models.Model):
         label = self.doc_type or 'Attachment'
         return f'{label} for insurance #{self.insurance_id}'
 
-    def save(self, *args, **kwargs):
-        if self.file and self.file.name:
-            name_lower = self.file.name.lower()
-            if any(name_lower.endswith(ext) for ext in IMAGE_EXTENSIONS):
-                try:
-                    raw = self.file.read()
-                    if raw:
-                        content, name = process_uploaded_file(
-                            raw,
-                            self.file.name,
-                            max_side=1600,
-                            quality=75,
-                        )
-                        self.file.save(name, ContentFile(content), save=False)
-                except Exception:
-                    pass
-        super().save(*args, **kwargs)
 
-
-class CarPhoto(models.Model):
+class CarPhoto(FileProcessingMixin, models.Model):
+    FILE_FIELDS = {
+        'photo': FileProcessOptions(
+            max_side=1600,
+            quality=75,
+        ),
+    }
     car = models.ForeignKey(
         Car,
         on_delete=models.CASCADE,
@@ -222,19 +195,3 @@ class CarPhoto(models.Model):
 
     def __str__(self) -> str:
         return f'Attachment for car #{self.car_id}'
-
-    def save(self, *args, **kwargs):
-        if self.photo:
-            try:
-                raw = self.photo.read()
-                if raw:
-                    content, name = process_uploaded_file(
-                        raw,
-                        self.photo.name,
-                        max_side=1600,
-                        quality=75,
-                    )
-                    self.photo.save(name, ContentFile(content), save=False)
-            except Exception:
-                pass
-        super().save(*args, **kwargs)
