@@ -8,6 +8,7 @@ from django.db.models import F, Func, Q
 from core.choices import Currency
 from core.constants import SYSTEM_BASE_CURRENCY
 from core.models import BaseModel
+from core.file_processing import FileProcessOptions, FileProcessingMixin
 from core.services import ALLOWED_UPLOAD_EXTENSIONS, process_uploaded_file
 from fleet.models import Car
 
@@ -65,8 +66,16 @@ class Renter(models.Model):
         super().save(*args, **kwargs)
 
 
-class AbstractBooking(BaseModel):
+class AbstractBooking(FileProcessingMixin, BaseModel):
     SKIP_PRECHECK_CONSTRAINTS = set()
+
+    FILE_FIELDS = {
+        'contract': FileProcessOptions(
+            images_only=False,
+            max_side=1600,
+            quality=75,
+        ),
+    }
 
     renter = models.ForeignKey(
         Renter,
@@ -189,23 +198,6 @@ class AbstractBooking(BaseModel):
         )
 
         self.validate_domain_specific()
-
-    def save(self, *args, **kwargs):
-        # self.full_clean()
-        if self.contract:
-            try:
-                raw = self.contract.read()
-                if raw:
-                    content, name = process_uploaded_file(
-                        raw,
-                        self.contract.name,
-                        max_side=1600,
-                        quality=75,
-                    )
-                    self.contract.save(name, ContentFile(content), save=False)
-            except Exception:
-                pass
-        super().save(*args, **kwargs)
 
 
 class Booking(AbstractBooking):
