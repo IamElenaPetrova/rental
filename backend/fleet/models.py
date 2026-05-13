@@ -136,10 +136,9 @@ class CarInsuranceDocument(FileProcessingMixin, models.Model):
         related_name='documents',
         verbose_name='Car insurance',
     )
-    doc_type = models.CharField(
-        max_length=255,
+    description = models.TextField(
         blank=True,
-        verbose_name='Document type',
+        verbose_name='Description',
     )
     file = models.FileField(
         upload_to='insurances/%Y/%m/',
@@ -159,7 +158,7 @@ class CarInsuranceDocument(FileProcessingMixin, models.Model):
         verbose_name_plural = 'Insurance attachments'
 
     def __str__(self) -> str:
-        label = self.doc_type or 'Attachment'
+        label = (self.description or '').strip() or 'Attachment'
         return f'{label} for insurance #{self.insurance_id}'
 
 

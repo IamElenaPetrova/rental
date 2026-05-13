@@ -7,7 +7,7 @@ from .models import Income, IncomePhoto, Expense, ExpensePhoto
 class IncomePhotoInline(admin.TabularInline):
     model = IncomePhoto
     extra = 0
-    fields = ('doc_type', 'photo')
+    fields = ('description', 'photo')
     verbose_name = 'Attachment'
     verbose_name_plural = 'Attachments'
 
@@ -80,7 +80,7 @@ class IncomeAdmin(admin.ModelAdmin):
 class ExpensePhotoInline(admin.TabularInline):
     model = ExpensePhoto
     extra = 0
-    fields = ('doc_type', 'photo')
+    fields = ('description', 'photo')
     verbose_name = 'Attachment'
     verbose_name_plural = 'Attachments'
 

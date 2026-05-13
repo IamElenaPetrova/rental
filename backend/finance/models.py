@@ -109,10 +109,9 @@ class IncomePhoto(FileProcessingMixin, models.Model):
         related_name='photos',
         verbose_name='Payment',
     )
-    doc_type = models.CharField(
-        max_length=255,
+    description = models.TextField(
         blank=True,
-        verbose_name='Document type',
+        verbose_name='Description',
     )
     photo = models.FileField(
         upload_to='incomes/%Y/%m/',
@@ -234,10 +233,9 @@ class ExpensePhoto(FileProcessingMixin, models.Model):
         related_name='photos',
         verbose_name='Expense',
     )
-    doc_type = models.CharField(
-        max_length=255,
+    description = models.TextField(
         blank=True,
-        verbose_name='Document type',
+        verbose_name='Description',
     )
     photo = models.FileField(
         upload_to='expenses/%Y/%m/',

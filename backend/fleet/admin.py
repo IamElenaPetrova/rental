@@ -59,7 +59,7 @@ class CarInsuranceDocumentInline(admin.TabularInline):
     model = CarInsuranceDocument
     fk_name = 'insurance'
     extra = 0
-    fields = ('doc_type', 'file')
+    fields = ('description', 'file')
     verbose_name = 'Insurance attachment'
     verbose_name_plural = 'Insurance attachments'
 
