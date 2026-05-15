@@ -1,5 +1,3 @@
-from decimal import Decimal, ROUND_HALF_UP
-
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.core.validators import FileExtensionValidator
@@ -163,13 +161,12 @@ class IncomeDocument(FileProcessingMixin, models.Model):
         return f'Document for payment #{self.income_id}'
 
 
-class Expense(BaseModel):
-    car = models.ForeignKey(
-        Car,
-        on_delete=models.PROTECT,
-        related_name='expenses',
-        verbose_name='Car',
-    )
+class AbstractExpense(BaseModel):
+    """
+    Expense for a rentable unit (car, house, …).
+    Unit FK lives on concrete models only (Expense, HouseExpense).
+    """
+
     description = models.TextField(
         verbose_name='Expense description',
     )
@@ -224,29 +221,52 @@ class Expense(BaseModel):
     )
 
     class Meta:
+        abstract = True
         verbose_name = 'Expense'
         verbose_name_plural = 'Expenses'
+
+    def validate_domain_specific(self):
+        pass
+
+    def has_unit_for_validation(self) -> bool:
+        raise NotImplementedError
+
+    def clean(self):
+        from finance.services import validate_expense_base_currency
+
+        super().clean()
+        if not self.has_unit_for_validation():
+            return
+        validate_expense_base_currency(self)
+        self.validate_domain_specific()
+
+    def save(self, *args, **kwargs) -> None:
+        from finance.services import apply_expense_base_currency
+
+        apply_expense_base_currency(self)
+        super().save(*args, **kwargs)
+
+
+class Expense(AbstractExpense):
+    car = models.ForeignKey(
+        Car,
+        on_delete=models.PROTECT,
+        related_name='expenses',
+        verbose_name='Car',
+    )
+
+    class Meta(AbstractExpense.Meta):
+        db_table = 'finance_expense'
 
     def __str__(self) -> str:
         return f'Expense #{self.pk} for car {self.car}'
 
-    def save(self, *args, **kwargs) -> None:
-        self.base_currency_at_save = SYSTEM_BASE_CURRENCY
-        if self.amount is not None:
-            base_currency = SYSTEM_BASE_CURRENCY
-            if self.currency == base_currency:
-                self.exchange_rate = Decimal('1')
-                self.amount_in_base_currency = self.amount
-            else:
-                if self.exchange_rate is None:
-                    raise ValueError(
-                        'Please provide an exchange rate when the expense'
-                        ' currency differs from the base currency.'
-                    )
-                self.amount_in_base_currency = (
-                    Decimal(self.amount) / Decimal(self.exchange_rate)
-                ).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-        super().save(*args, **kwargs)
+    def has_unit_for_validation(self) -> bool:
+        return bool(self.car_id)
+
+    def validate_domain_specific(self):
+        if not self.car_id:
+            raise ValidationError({'car': 'Select a car.'})
 
 
 class ExpenseDocument(FileProcessingMixin, models.Model):

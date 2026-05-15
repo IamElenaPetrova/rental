@@ -2,6 +2,8 @@ from decimal import Decimal, ROUND_HALF_UP
 
 from django.core.exceptions import ValidationError
 
+from core.constants import SYSTEM_BASE_CURRENCY
+
 
 # =========================
 # Payment (income) validation
@@ -35,4 +37,45 @@ def apply_payment_currency(payment, contract_currency: str) -> None:
 
     payment.amount_in_booking_currency = (
         Decimal(payment.amount) / Decimal(payment.exchange_rate)
+    ).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+
+
+# =========================
+# Expense validation
+# =========================
+
+
+def validate_expense_base_currency(expense) -> None:
+    if expense.amount is None:
+        return
+    if expense.currency == SYSTEM_BASE_CURRENCY:
+        return
+    if not expense.exchange_rate:
+        raise ValidationError(
+            {
+                'exchange_rate': (
+                    'Please provide an exchange rate when the expense '
+                    'currency differs from the base currency.'
+                )
+            }
+        )
+
+
+# =========================
+# Expense apply on save
+# =========================
+
+
+def apply_expense_base_currency(expense) -> None:
+    expense.base_currency_at_save = SYSTEM_BASE_CURRENCY
+    if expense.amount is None:
+        return
+
+    if expense.currency == SYSTEM_BASE_CURRENCY:
+        expense.exchange_rate = Decimal('1')
+        expense.amount_in_base_currency = expense.amount
+        return
+
+    expense.amount_in_base_currency = (
+        Decimal(expense.amount) / Decimal(expense.exchange_rate)
     ).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
