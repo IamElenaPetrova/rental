@@ -95,7 +95,7 @@ class Income(BaseModel):
         super().save(*args, **kwargs)
 
 
-class IncomePhoto(FileProcessingMixin, models.Model):
+class IncomeDocument(FileProcessingMixin, models.Model):
     FILE_FIELDS = {
         'file': FileProcessOptions(
             max_side=1600,
@@ -106,7 +106,7 @@ class IncomePhoto(FileProcessingMixin, models.Model):
     income = models.ForeignKey(
         Income,
         on_delete=models.CASCADE,
-        related_name='photos',
+        related_name='documents',
         verbose_name='Payment',
     )
     description = models.CharField(
@@ -220,7 +220,7 @@ class Expense(BaseModel):
         super().save(*args, **kwargs)
 
 
-class ExpensePhoto(FileProcessingMixin, models.Model):
+class ExpenseDocument(FileProcessingMixin, models.Model):
     FILE_FIELDS = {
         'file': FileProcessOptions(
             max_side=1600,
@@ -231,7 +231,7 @@ class ExpensePhoto(FileProcessingMixin, models.Model):
     expense = models.ForeignKey(
         Expense,
         on_delete=models.CASCADE,
-        related_name='photos',
+        related_name='documents',
         verbose_name='Expense',
     )
     description = models.CharField(

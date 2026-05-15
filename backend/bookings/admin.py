@@ -54,29 +54,29 @@ class IncomeInline(admin.TabularInline):
         'exchange_rate',
         'amount_in_booking_currency',
         'received_by',
-        'photos_link',
+        'documents_link',
     )
     readonly_fields = (
         'amount_currency_display',
         'amount_in_booking_currency',
-        'photos_link',
+        'documents_link',
     )
     autocomplete_fields = ('received_by',)
     show_change_link = True
 
     def get_queryset(self, request):
-        return super().get_queryset(request).prefetch_related('photos')
+        return super().get_queryset(request).prefetch_related('documents')
 
-    def photos_link(self, obj):
+    def documents_link(self, obj):
         if obj is None or not obj.pk:
             return '—'
-        count = obj.photos.count()
+        count = obj.documents.count()
         url = reverse('admin:finance_income_change', args=(obj.pk,))
         if count == 0:
             return format_html('<a href="{}">+</a>', url)
         return format_html('<a href="{}">{}</a>', url, count)
 
-    photos_link.short_description = 'Docs'
+    documents_link.short_description = 'Docs'
 
     def amount_currency_display(self, obj):
         if obj is None or not obj.pk:

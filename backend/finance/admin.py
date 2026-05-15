@@ -1,11 +1,11 @@
 from django.contrib import admin
 
 from core.constants import SYSTEM_BASE_CURRENCY
-from .models import Income, IncomePhoto, Expense, ExpensePhoto
+from .models import Income, IncomeDocument, Expense, ExpenseDocument
 
 
-class IncomePhotoInline(admin.TabularInline):
-    model = IncomePhoto
+class IncomeDocumentInline(admin.TabularInline):
+    model = IncomeDocument
     extra = 0
     fields = ('description', 'file')
     verbose_name = 'Payment document'
@@ -50,7 +50,7 @@ class IncomeAdmin(admin.ModelAdmin):
         'created_by',
         'updated_by',
     )
-    inlines = (IncomePhotoInline,)
+    inlines = (IncomeDocumentInline,)
     date_hierarchy = 'received_date'
     fieldsets = (
         (None, {
@@ -77,8 +77,8 @@ class IncomeAdmin(admin.ModelAdmin):
         super().save_model(request, obj, form, change)
 
 
-class ExpensePhotoInline(admin.TabularInline):
-    model = ExpensePhoto
+class ExpenseDocumentInline(admin.TabularInline):
+    model = ExpenseDocument
     extra = 0
     fields = ('description', 'file')
     verbose_name = 'Expense document'
@@ -106,7 +106,7 @@ class ExpenseAdmin(admin.ModelAdmin):
         'updated_by',
     )
     date_hierarchy = 'date'
-    inlines = (ExpensePhotoInline,)
+    inlines = (ExpenseDocumentInline,)
     fieldsets = (
         (None, {
             'fields': (
