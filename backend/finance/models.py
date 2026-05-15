@@ -1,10 +1,12 @@
 from decimal import Decimal, ROUND_HALF_UP
 
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.core.validators import FileExtensionValidator
 from django.db import models
 
-from bookings.models import Booking, Currency
+from bookings.models import Booking
+from core.choices import Currency
 from core.constants import SYSTEM_BASE_CURRENCY
 from core.file_processing import FileProcessOptions, FileProcessingMixin
 from core.models import BaseModel
@@ -14,13 +16,12 @@ from fleet.models import Car
 User = get_user_model()
 
 
-class Income(BaseModel):
-    booking = models.ForeignKey(
-        Booking,
-        on_delete=models.PROTECT,
-        related_name='incomes',
-        verbose_name='Car Booking',
-    )
+class AbstractIncome(BaseModel):
+    """
+    Payment against a booking (car or house).
+    Booking FK lives on concrete models only (Income, HouseIncome).
+    """
+
     received_date = models.DateField(
         verbose_name='Date received',
         null=True,
@@ -37,7 +38,6 @@ class Income(BaseModel):
         default=SYSTEM_BASE_CURRENCY,
         verbose_name='Payment currency',
     )
-
     exchange_rate = models.DecimalField(
         max_digits=12,
         decimal_places=6,
@@ -57,7 +57,6 @@ class Income(BaseModel):
             'Calculated automatically on save using payment amount and rate.'
         ),
     )
-
     received_by = models.ForeignKey(
         User,
         on_delete=models.PROTECT,
@@ -65,34 +64,64 @@ class Income(BaseModel):
         verbose_name='Payment recipient',
     )
 
+    class Meta:
+        abstract = True
+
+    def validate_domain_specific(self):
+        pass
+
+    def get_contract_currency_for_validation(self):
+        raise NotImplementedError
+
+    def clean(self):
+        from finance.services import validate_payment_currency
+
+        super().clean()
+
+        contract_currency = self.get_contract_currency_for_validation()
+        if contract_currency is None:
+            return
+
+        validate_payment_currency(self, contract_currency)
+        self.validate_domain_specific()
+
+    def get_contract_currency(self) -> str:
+        raise NotImplementedError
+
+    def save(self, *args, **kwargs) -> None:
+        from finance.services import apply_payment_currency
+
+        apply_payment_currency(self, self.get_contract_currency())
+        super().save(*args, **kwargs)
+
+
+class Income(AbstractIncome):
+    booking = models.ForeignKey(
+        Booking,
+        on_delete=models.PROTECT,
+        related_name='incomes',
+        verbose_name='Car Booking',
+    )
+
+    class Meta:
+        db_table = 'finance_income'
+
     def __str__(self) -> str:
         return f'Income #{self.pk} for booking #{self.booking_id}'
 
-    def save(self, *args, **kwargs) -> None:
-        """
-        Логика сохранения Income:
+    def get_contract_currency_for_validation(self):
+        if not self.booking_id:
+            return None
+        return self.booking.currency
 
-        Если валюта оплаты = валюта бронирования:
-            exchange_rate = 1
-            amount_in_booking_currency = amount
-        Если отличается:
-            amount_in_booking_currency = amount / exchange_rate
-        Округление до 2 знаков через Decimal.
-        """
-        if self.currency == self.booking.currency:
-            self.exchange_rate = Decimal('1')
-            self.amount_in_booking_currency = self.amount
-        else:
-            if self.exchange_rate is None:
-                raise ValueError(
-                    'Please provide an exchange rate when paying in '
-                    'a different currency.'
-                )
-            self.amount_in_booking_currency = (
-                Decimal(self.amount) / Decimal(self.exchange_rate)
-            ).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    def get_contract_currency(self) -> str:
+        if not self.booking_id:
+            raise ValidationError({'booking': 'Select a booking.'})
+        return self.booking.currency
 
-        super().save(*args, **kwargs)
+    def validate_domain_specific(self):
+        if not self.booking_id:
+            raise ValidationError({'booking': 'Select a booking.'})
 
 
 class IncomeDocument(FileProcessingMixin, models.Model):
