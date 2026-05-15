@@ -7,9 +7,9 @@ from .models import Income, IncomePhoto, Expense, ExpensePhoto
 class IncomePhotoInline(admin.TabularInline):
     model = IncomePhoto
     extra = 0
-    fields = ('description', 'photo')
-    verbose_name = 'Attachment'
-    verbose_name_plural = 'Attachments'
+    fields = ('description', 'file')
+    verbose_name = 'Payment document'
+    verbose_name_plural = 'Payment documents'
 
 
 @admin.register(Income)
@@ -80,9 +80,9 @@ class IncomeAdmin(admin.ModelAdmin):
 class ExpensePhotoInline(admin.TabularInline):
     model = ExpensePhoto
     extra = 0
-    fields = ('description', 'photo')
-    verbose_name = 'Attachment'
-    verbose_name_plural = 'Attachments'
+    fields = ('description', 'file')
+    verbose_name = 'Expense document'
+    verbose_name_plural = 'Expense documents'
 
 
 @admin.register(Expense)

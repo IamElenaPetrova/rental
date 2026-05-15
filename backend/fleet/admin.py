@@ -9,6 +9,7 @@ from finance.models import Expense
 from .models import (
     Car,
     CarPhoto,
+    CarDocument,
     InsuranceCompany,
     CarInsurance,
     CarInsuranceDocument,
@@ -50,9 +51,19 @@ class CarPhotoInline(admin.TabularInline):
     model = CarPhoto
     fk_name = 'car'
     extra = 0
-    fields = ('photo',)
-    verbose_name = 'Attachment'
-    verbose_name_plural = 'Attachments'
+    fields = ('sort_order', 'description', 'photo')
+    ordering = ('sort_order', 'id')
+    verbose_name = 'Gallery photo'
+    verbose_name_plural = 'Gallery'
+
+
+class CarDocumentInline(admin.TabularInline):
+    model = CarDocument
+    fk_name = 'car'
+    extra = 0
+    fields = ('description', 'file')
+    verbose_name = 'Car document'
+    verbose_name_plural = 'Documents'
 
 
 class CarInsuranceDocumentInline(admin.TabularInline):
@@ -60,8 +71,8 @@ class CarInsuranceDocumentInline(admin.TabularInline):
     fk_name = 'insurance'
     extra = 0
     fields = ('description', 'file')
-    verbose_name = 'Insurance attachment'
-    verbose_name_plural = 'Insurance attachments'
+    verbose_name = 'Insurance document'
+    verbose_name_plural = 'Insurance documents'
 
 
 class CarInspectionInline(admin.TabularInline):
@@ -93,6 +104,7 @@ class CarAdmin(admin.ModelAdmin):
     inlines = (
         CarInsuranceInline,
         CarPhotoInline,
+        CarDocumentInline,
         CarInspectionInline,
         ExpenseInline,
     )

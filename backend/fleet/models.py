@@ -136,13 +136,14 @@ class CarInsuranceDocument(FileProcessingMixin, models.Model):
         related_name='documents',
         verbose_name='Car insurance',
     )
-    description = models.TextField(
+    description = models.CharField(
+        max_length=255,
         blank=True,
         verbose_name='Description',
     )
     file = models.FileField(
         upload_to='insurances/%Y/%m/',
-        verbose_name='Attachment',
+        verbose_name='File',
         validators=[
             FileExtensionValidator(
                 allowed_extensions=[
@@ -154,11 +155,11 @@ class CarInsuranceDocument(FileProcessingMixin, models.Model):
     )
 
     class Meta:
-        verbose_name = 'Insurance attachment'
-        verbose_name_plural = 'Insurance attachments'
+        verbose_name = 'Insurance document'
+        verbose_name_plural = 'Insurance documents'
 
     def __str__(self) -> str:
-        label = (self.description or '').strip() or 'Attachment'
+        label = (self.description or '').strip() or 'Document'
         return f'{label} for insurance #{self.insurance_id}'
 
 
@@ -175,9 +176,59 @@ class CarPhoto(FileProcessingMixin, models.Model):
         related_name='photos',
         verbose_name='Car',
     )
+    sort_order = models.PositiveSmallIntegerField(
+        default=0,
+        verbose_name='Sort order',
+        help_text='Lower numbers appear first in the gallery.',
+    )
+    description = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name='Description',
+    )
     photo = models.FileField(
-        upload_to='cars/%Y/%m/',
-        verbose_name='Attachment',
+        upload_to='cars/gallery/%Y/%m/',
+        verbose_name='Photo',
+        validators=[
+            FileExtensionValidator(
+                allowed_extensions=[
+                    e.lstrip('.') for e in IMAGE_EXTENSIONS
+                ]
+            ),
+        ],
+    )
+
+    class Meta:
+        verbose_name = 'Car gallery photo'
+        verbose_name_plural = 'Car gallery photos'
+        ordering = ['sort_order', 'id']
+
+    def __str__(self) -> str:
+        label = (self.description or '').strip()
+        if label:
+            return f'{label} (car #{self.car_id})'
+        if self.pk:
+            return f'Gallery photo #{self.pk} (car #{self.car_id})'
+        return f'Gallery photo (car #{self.car_id})'
+
+
+class CarDocument(FileProcessingMixin, models.Model):
+    FILE_FIELDS = {'file': FileProcessOptions(max_side=1600, quality=75)}
+
+    car = models.ForeignKey(
+        Car,
+        on_delete=models.CASCADE,
+        related_name='documents',
+        verbose_name='Car',
+    )
+    description = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name='Description',
+    )
+    file = models.FileField(
+        upload_to='cars/documents/%Y/%m/',
+        verbose_name='File',
         validators=[
             FileExtensionValidator(
                 allowed_extensions=[
@@ -189,8 +240,10 @@ class CarPhoto(FileProcessingMixin, models.Model):
     )
 
     class Meta:
-        verbose_name = 'Car attachment'
-        verbose_name_plural = 'Car attachments'
+        verbose_name = 'Car document'
+        verbose_name_plural = 'Car documents'
+        ordering = ['-id']
 
     def __str__(self) -> str:
-        return f'Attachment for car #{self.car_id}'
+        label = (self.description or '').strip() or 'Document'
+        return f'{label} (car #{self.car_id})'

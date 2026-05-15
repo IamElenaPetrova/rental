@@ -76,7 +76,7 @@ class IncomeInline(admin.TabularInline):
             return format_html('<a href="{}">+</a>', url)
         return format_html('<a href="{}">{}</a>', url, count)
 
-    photos_link.short_description = 'Attach.'
+    photos_link.short_description = 'Docs'
 
     def amount_currency_display(self, obj):
         if obj is None or not obj.pk:

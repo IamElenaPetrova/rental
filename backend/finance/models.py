@@ -97,7 +97,7 @@ class Income(BaseModel):
 
 class IncomePhoto(FileProcessingMixin, models.Model):
     FILE_FIELDS = {
-        'photo': FileProcessOptions(
+        'file': FileProcessOptions(
             max_side=1600,
             quality=75,
         ),
@@ -109,13 +109,14 @@ class IncomePhoto(FileProcessingMixin, models.Model):
         related_name='photos',
         verbose_name='Payment',
     )
-    description = models.TextField(
+    description = models.CharField(
+        max_length=255,
         blank=True,
         verbose_name='Description',
     )
-    photo = models.FileField(
+    file = models.FileField(
         upload_to='incomes/%Y/%m/',
-        verbose_name='Attachment',
+        verbose_name='File',
         validators=[
             FileExtensionValidator(
                 allowed_extensions=[
@@ -126,11 +127,11 @@ class IncomePhoto(FileProcessingMixin, models.Model):
     )
 
     class Meta:
-        verbose_name = 'Payment attachment'
-        verbose_name_plural = 'Payment attachments'
+        verbose_name = 'Payment document'
+        verbose_name_plural = 'Payment documents'
 
     def __str__(self) -> str:
-        return f'Attachment for income #{self.income_id}'
+        return f'Document for payment #{self.income_id}'
 
 
 class Expense(BaseModel):
@@ -221,7 +222,7 @@ class Expense(BaseModel):
 
 class ExpensePhoto(FileProcessingMixin, models.Model):
     FILE_FIELDS = {
-        'photo': FileProcessOptions(
+        'file': FileProcessOptions(
             max_side=1600,
             quality=75,
         ),
@@ -233,13 +234,14 @@ class ExpensePhoto(FileProcessingMixin, models.Model):
         related_name='photos',
         verbose_name='Expense',
     )
-    description = models.TextField(
+    description = models.CharField(
+        max_length=255,
         blank=True,
         verbose_name='Description',
     )
-    photo = models.FileField(
+    file = models.FileField(
         upload_to='expenses/%Y/%m/',
-        verbose_name='Attachment',
+        verbose_name='File',
         validators=[
             FileExtensionValidator(
                 allowed_extensions=[
@@ -250,8 +252,8 @@ class ExpensePhoto(FileProcessingMixin, models.Model):
     )
 
     class Meta:
-        verbose_name = 'Expense attachment'
-        verbose_name_plural = 'Expense attachments'
+        verbose_name = 'Expense document'
+        verbose_name_plural = 'Expense documents'
 
     def __str__(self) -> str:
-        return f'Attachment for expense #{self.expense_id}'
+        return f'Document for expense #{self.expense_id}'
