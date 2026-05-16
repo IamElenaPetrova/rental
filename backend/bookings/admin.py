@@ -8,7 +8,7 @@ from django.db.models.functions import Coalesce
 from django.urls import reverse
 from django.utils.html import format_html
 
-from finance.models import Income
+from finance.models import HouseIncome, Income
 from .models import Booking, HouseBooking, Renter
 
 
@@ -72,6 +72,48 @@ class IncomeInline(admin.TabularInline):
             return '—'
         count = obj.documents.count()
         url = reverse('admin:finance_income_change', args=(obj.pk,))
+        if count == 0:
+            return format_html('<a href="{}">+</a>', url)
+        return format_html('<a href="{}">{}</a>', url, count)
+
+    documents_link.short_description = 'Docs'
+
+    def amount_currency_display(self, obj):
+        if obj is None or not obj.pk:
+            return '—'
+        return f'{obj.amount} {obj.currency}'
+
+    amount_currency_display.short_description = 'Amount (currency)'
+
+
+class HouseIncomeInline(admin.TabularInline):
+    model = HouseIncome
+    fk_name = 'house_booking'
+    extra = 0
+    fields = (
+        'amount',
+        'currency',
+        'exchange_rate',
+        'amount_in_booking_currency',
+        'received_by',
+        'documents_link',
+    )
+    readonly_fields = (
+        'amount_currency_display',
+        'amount_in_booking_currency',
+        'documents_link',
+    )
+    autocomplete_fields = ('received_by',)
+    show_change_link = True
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).prefetch_related('documents')
+
+    def documents_link(self, obj):
+        if obj is None or not obj.pk:
+            return '—'
+        count = obj.documents.count()
+        url = reverse('admin:finance_houseincome_change', args=(obj.pk,))
         if count == 0:
             return format_html('<a href="{}">+</a>', url)
         return format_html('<a href="{}">{}</a>', url, count)
@@ -213,6 +255,7 @@ class HouseBookingAdmin(admin.ModelAdmin):
         'start_date',
         'end_date',
         'rent_amount_display',
+        'display_total_paid',
         'status',
     )
 
@@ -223,7 +266,7 @@ class HouseBookingAdmin(admin.ModelAdmin):
 
     rent_amount_display.short_description = 'Rent amount'
 
-    list_filter = ('status', 'currency', 'house')
+    list_filter = (PaymentStatusFilter, 'status', 'currency', 'house')
     search_fields = (
         'renter__first_name',
         'renter__last_name',
@@ -231,12 +274,14 @@ class HouseBookingAdmin(admin.ModelAdmin):
         'house__name',
         'house__address',
     )
+    inlines = (HouseIncomeInline,)
     autocomplete_fields = ('renter', 'house')
     readonly_fields = (
         'created_at',
         'updated_at',
         'created_by',
         'updated_by',
+        'total_paid_display',
     )
     date_hierarchy = 'start_date'
     fieldsets = (
@@ -247,6 +292,7 @@ class HouseBookingAdmin(admin.ModelAdmin):
                 'start_date',
                 'end_date',
                 'rent_amount',
+                'total_paid_display',
                 'currency',
                 'status',
                 'comment',
@@ -264,6 +310,33 @@ class HouseBookingAdmin(admin.ModelAdmin):
         }),
     )
 
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.annotate(
+            _total_paid=Sum('incomes__amount_in_booking_currency')
+        )
+
+    def display_total_paid(self, obj):
+        total = getattr(obj, '_total_paid', None)
+        if total is None:
+            return '0'
+        return f'{total} {obj.currency}'
+
+    display_total_paid.short_description = 'Paid'
+
+    def total_paid_display(self, obj):
+        if obj is None:
+            return ''
+        result = obj.incomes.aggregate(
+            total=Sum('amount_in_booking_currency')
+        )
+        total = result.get('total')
+        if total is None:
+            return '0'
+        return f'{total} {obj.currency}'
+
+    total_paid_display.short_description = 'Paid'
+
     def save_model(self, request, obj, form, change):
         if not change:
             obj.created_by = request.user
@@ -280,3 +353,13 @@ class HouseBookingAdmin(admin.ModelAdmin):
                     ),
                 })
             raise
+
+    def save_formset(self, request, form, formset, change):
+        instances = formset.save(commit=False)
+        for instance in instances:
+            if isinstance(instance, HouseIncome):
+                if not instance.pk:
+                    instance.created_by = request.user
+                instance.updated_by = request.user
+                instance.save()
+        formset.save_m2m()

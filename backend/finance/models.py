@@ -3,7 +3,8 @@ from django.core.exceptions import ValidationError
 from django.core.validators import FileExtensionValidator
 from django.db import models
 
-from bookings.models import Booking
+from bookings.models import Booking, HouseBooking
+from properties.models import House
 from core.choices import Currency
 from core.constants import SYSTEM_BASE_CURRENCY
 from core.file_processing import FileProcessOptions, FileProcessingMixin
@@ -58,7 +59,7 @@ class AbstractIncome(BaseModel):
     received_by = models.ForeignKey(
         User,
         on_delete=models.PROTECT,
-        related_name='received_incomes',
+        related_name='received_%(class)ss',
         verbose_name='Payment recipient',
     )
 
@@ -103,6 +104,8 @@ class Income(AbstractIncome):
 
     class Meta:
         db_table = 'finance_income'
+        verbose_name = 'Car income'
+        verbose_name_plural = 'Car incomes'
 
     def __str__(self) -> str:
         return f'Income #{self.pk} for booking #{self.booking_id}'
@@ -154,11 +157,88 @@ class IncomeDocument(FileProcessingMixin, models.Model):
     )
 
     class Meta:
-        verbose_name = 'Payment document'
-        verbose_name_plural = 'Payment documents'
+        verbose_name = 'Car payment document'
+        verbose_name_plural = 'Car payment documents'
 
     def __str__(self) -> str:
         return f'Document for payment #{self.income_id}'
+
+
+class HouseIncome(AbstractIncome):
+    house_booking = models.ForeignKey(
+        HouseBooking,
+        on_delete=models.PROTECT,
+        related_name='incomes',
+        verbose_name='House booking',
+    )
+
+    class Meta:
+        db_table = 'finance_house_income'
+        verbose_name = 'House income'
+        verbose_name_plural = 'House incomes'
+
+    def __str__(self) -> str:
+        return (
+            f'House income #{self.pk} '
+            f'for booking #{self.house_booking_id}'
+        )
+
+    def get_contract_currency_for_validation(self):
+        if not self.house_booking_id:
+            return None
+        return self.house_booking.currency
+
+    def get_contract_currency(self) -> str:
+        if not self.house_booking_id:
+            raise ValidationError({
+                'house_booking': 'Select a house booking.',
+            })
+        return self.house_booking.currency
+
+    def validate_domain_specific(self):
+        if not self.house_booking_id:
+            raise ValidationError({
+                'house_booking': 'Select a house booking.',
+            })
+
+
+class HouseIncomeDocument(FileProcessingMixin, models.Model):
+    FILE_FIELDS = {
+        'file': FileProcessOptions(
+            max_side=1600,
+            quality=75,
+        ),
+    }
+
+    income = models.ForeignKey(
+        HouseIncome,
+        on_delete=models.CASCADE,
+        related_name='documents',
+        verbose_name='Payment',
+    )
+    description = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name='Description',
+    )
+    file = models.FileField(
+        upload_to='house_incomes/%Y/%m/',
+        verbose_name='File',
+        validators=[
+            FileExtensionValidator(
+                allowed_extensions=[
+                    e.lstrip('.') for e in ALLOWED_UPLOAD_EXTENSIONS
+                ]
+            ),
+        ],
+    )
+
+    class Meta:
+        verbose_name = 'House payment document'
+        verbose_name_plural = 'House payment documents'
+
+    def __str__(self) -> str:
+        return f'Document for house payment #{self.income_id}'
 
 
 class AbstractExpense(BaseModel):
@@ -176,7 +256,7 @@ class AbstractExpense(BaseModel):
     payed_by = models.ForeignKey(
         User,
         on_delete=models.PROTECT,
-        related_name='expenses_paid',
+        related_name='paid_%(class)ss',
         verbose_name='Paid by',
         null=True,
         blank=True,
@@ -257,6 +337,8 @@ class Expense(AbstractExpense):
 
     class Meta(AbstractExpense.Meta):
         db_table = 'finance_expense'
+        verbose_name = 'Car expense'
+        verbose_name_plural = 'Car expenses'
 
     def __str__(self) -> str:
         return f'Expense #{self.pk} for car {self.car}'
@@ -301,8 +383,71 @@ class ExpenseDocument(FileProcessingMixin, models.Model):
     )
 
     class Meta:
-        verbose_name = 'Expense document'
-        verbose_name_plural = 'Expense documents'
+        verbose_name = 'Car expense document'
+        verbose_name_plural = 'Car expense documents'
 
     def __str__(self) -> str:
         return f'Document for expense #{self.expense_id}'
+
+
+class HouseExpense(AbstractExpense):
+    house = models.ForeignKey(
+        House,
+        on_delete=models.PROTECT,
+        related_name='expenses',
+        verbose_name='House',
+    )
+
+    class Meta(AbstractExpense.Meta):
+        db_table = 'finance_house_expense'
+        verbose_name = 'House expense'
+        verbose_name_plural = 'House expenses'
+
+    def __str__(self) -> str:
+        return f'House expense #{self.pk} for {self.house}'
+
+    def has_unit_for_validation(self) -> bool:
+        return bool(self.house_id)
+
+    def validate_domain_specific(self):
+        if not self.house_id:
+            raise ValidationError({'house': 'Select a house.'})
+
+
+class HouseExpenseDocument(FileProcessingMixin, models.Model):
+    FILE_FIELDS = {
+        'file': FileProcessOptions(
+            max_side=1600,
+            quality=75,
+        ),
+    }
+
+    expense = models.ForeignKey(
+        HouseExpense,
+        on_delete=models.CASCADE,
+        related_name='documents',
+        verbose_name='Expense',
+    )
+    description = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name='Description',
+    )
+    file = models.FileField(
+        upload_to='house_expenses/%Y/%m/',
+        verbose_name='File',
+        validators=[
+            FileExtensionValidator(
+                allowed_extensions=[
+                    e.lstrip('.') for e in ALLOWED_UPLOAD_EXTENSIONS
+                ]
+            ),
+        ],
+    )
+
+    class Meta:
+        verbose_name = 'House expense document'
+        verbose_name_plural = 'House expense documents'
+
+    def __str__(self) -> str:
+        return f'Document for house expense #{self.expense_id}'

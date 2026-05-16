@@ -1,7 +1,37 @@
 from django.contrib import admin
 from django.utils.html import format_html
 
+from finance.models import HouseExpense
+
 from .models import House, HouseDocument, HousePhoto
+
+
+class HouseExpenseInline(admin.TabularInline):
+    model = HouseExpense
+    fk_name = 'house'
+    extra = 0
+    fields = (
+        'description_short',
+        'date',
+        'payed_by',
+        'amount',
+        'currency',
+        'amount_in_base_currency',
+    )
+    readonly_fields = ('description_short', 'amount_in_base_currency')
+    autocomplete_fields = ('payed_by',)
+    show_change_link = True
+    ordering = ('-date',)
+    verbose_name = 'Expense'
+    verbose_name_plural = 'House expenses'
+
+    def description_short(self, obj):
+        if obj is None:
+            return ''
+        text = obj.description or ''
+        return text[:60] + ('…' if len(text) > 60 else '')
+
+    description_short.short_description = 'Description'
 
 
 class HousePhotoInline(admin.TabularInline):
@@ -42,7 +72,7 @@ class HouseAdmin(admin.ModelAdmin):
         'created_by',
         'updated_by',
     )
-    inlines = (HousePhotoInline, HouseDocumentInline)
+    inlines = (HousePhotoInline, HouseDocumentInline, HouseExpenseInline)
     fieldsets = (
         (None, {
             'fields': (
