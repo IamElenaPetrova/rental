@@ -14,9 +14,9 @@ from fleet.models import Car
 
 class BookingStatus(models.TextChoices):
     CONFIRMED = 'CONFIRMED', 'Confirmed'
-    #PARTIALLY_PAID = 'PARTIALLY_PAID', 'Partially paid'
-    #PAID = 'PAID', 'Paid'
-    #COMPLETED = 'COMPLETED', 'Completed'
+    # PARTIALLY_PAID = 'PARTIALLY_PAID', 'Partially paid'
+    # PAID = 'PAID', 'Paid'
+    # COMPLETED = 'COMPLETED', 'Completed'
     CANCELLED = 'CANCELLED', 'Cancelled'
 
 
@@ -131,7 +131,7 @@ class AbstractBooking(FileProcessingMixin, BaseModel):
                         F('start_date'),
                         F('end_date'),
                         function='daterange',
-                        template="%(function)s(%(expressions)s, '[]')",  # включительные границы
+                        template="%(function)s(%(expressions)s, '[]')",
                     ),
                     RangeOperators.OVERLAPS,
                 ),
