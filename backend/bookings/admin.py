@@ -9,7 +9,7 @@ from django.urls import reverse
 from django.utils.html import format_html
 
 from finance.models import Income
-from .models import Booking, Renter
+from .models import Booking, HouseBooking, Renter
 
 
 class PaymentStatusFilter(admin.SimpleListFilter):
@@ -202,3 +202,81 @@ class CarBookingAdmin(admin.ModelAdmin):
                 instance.updated_by = request.user
                 instance.save()
         formset.save_m2m()
+
+
+@admin.register(HouseBooking)
+class HouseBookingAdmin(admin.ModelAdmin):
+    list_display = (
+        'id',
+        'house',
+        'renter',
+        'start_date',
+        'end_date',
+        'rent_amount_display',
+        'status',
+    )
+
+    def rent_amount_display(self, obj):
+        if obj is None:
+            return '—'
+        return f'{obj.rent_amount} {obj.currency}'
+
+    rent_amount_display.short_description = 'Rent amount'
+
+    list_filter = ('status', 'currency', 'house')
+    search_fields = (
+        'renter__first_name',
+        'renter__last_name',
+        'renter__phone',
+        'house__name',
+        'house__address',
+    )
+    autocomplete_fields = ('renter', 'house')
+    readonly_fields = (
+        'created_at',
+        'updated_at',
+        'created_by',
+        'updated_by',
+    )
+    date_hierarchy = 'start_date'
+    fieldsets = (
+        (None, {
+            'fields': (
+                'house',
+                'renter',
+                'start_date',
+                'end_date',
+                'rent_amount',
+                'currency',
+                'status',
+                'comment',
+                'contract',
+            ),
+        }),
+        ('Audit', {
+            'fields': (
+                'created_at',
+                'updated_at',
+                'created_by',
+                'updated_by',
+            ),
+            'classes': ('collapse',),
+        }),
+    )
+
+    def save_model(self, request, obj, form, change):
+        if not change:
+            obj.created_by = request.user
+        obj.updated_by = request.user
+        try:
+            with transaction.atomic():
+                super().save_model(request, obj, form, change)
+        except IntegrityError as exc:
+            if 'house_booking_no_overlaps' in str(exc):
+                raise ValidationError({
+                    'start_date': (
+                        'This booking overlaps with another booking '
+                        'for this house.'
+                    ),
+                })
+            raise

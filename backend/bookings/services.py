@@ -1,6 +1,7 @@
 from django.core.exceptions import ValidationError
 
 from fleet.models import Car
+from properties.models import House
 
 # =========================
 # Common booking validation
@@ -87,3 +88,17 @@ def validate_car_is_active(car_id) -> None:
         return
     if not Car.objects.filter(pk=car_id, is_active=True).exists():
         raise ValidationError('Cannot create a booking for an inactive car.')
+
+
+# =========================
+# House-only validation
+# =========================
+
+
+def validate_house_is_active(house_id) -> None:
+    if house_id is None:
+        return
+    if not House.objects.filter(pk=house_id, is_active=True).exists():
+        raise ValidationError(
+            'Cannot create a booking for an inactive house.'
+        )

@@ -10,6 +10,7 @@ from core.models import BaseModel
 from core.file_processing import FileProcessOptions, FileProcessingMixin
 from core.services import ALLOWED_UPLOAD_EXTENSIONS
 from fleet.models import Car
+from properties.models import House
 
 
 class BookingStatus(models.TextChoices):
@@ -240,3 +241,45 @@ class Booking(AbstractBooking):
 
         validate_mileage_range(self.start_mileage, self.end_mileage)
         validate_car_is_active(self.car_id)
+
+
+class HouseBooking(AbstractBooking):
+    SKIP_PRECHECK_CONSTRAINTS = {'house_booking_no_overlaps'}
+
+    house = models.ForeignKey(
+        House,
+        on_delete=models.PROTECT,
+        related_name='bookings',
+        verbose_name='House',
+    )
+
+    class Meta:
+        verbose_name = 'House booking'
+        verbose_name_plural = 'House bookings'
+        constraints = [
+            AbstractBooking.build_no_overlap_constraint(
+                unit_field='house',
+                name='house_booking_no_overlaps',
+            ),
+        ]
+
+    def __str__(self) -> str:
+        start = (
+            self.start_date.strftime('%d %b %y') if self.start_date else '—'
+        )
+        end = self.end_date.strftime('%d %b %y') if self.end_date else '—'
+        dates = f'{start}–{end}'
+        return f'{self.house} - {self.renter} ({dates})'
+
+    def get_overlap_queryset(self):
+        return HouseBooking.objects.all()
+
+    def get_overlap_unit_filter(self):
+        if not self.house_id:
+            return {}
+        return {'house_id': self.house_id}
+
+    def validate_domain_specific(self):
+        from .services import validate_house_is_active
+
+        validate_house_is_active(self.house_id)
