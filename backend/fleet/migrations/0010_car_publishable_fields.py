@@ -21,6 +21,7 @@ class Migration(migrations.Migration):
             name='slug',
             field=models.SlugField(
                 blank=True,
+                null=True,
                 max_length=255,
                 unique=True,
                 verbose_name='URL slug',

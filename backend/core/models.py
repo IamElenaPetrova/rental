@@ -48,6 +48,7 @@ class PublishableMixin(models.Model):
         max_length=255,
         unique=True,
         blank=True,
+        null=True,
         verbose_name='URL slug',
         help_text='Used in the URL, e.g. toyota-rav4-2022',
     )
