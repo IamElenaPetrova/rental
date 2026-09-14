@@ -3,13 +3,13 @@ from django.core.validators import FileExtensionValidator
 from django.db import models
 
 from core.file_processing import FileProcessOptions, FileProcessingMixin
-from core.models import BaseModel
+from core.models import BaseModel, PublishableMixin
 from core.services import ALLOWED_UPLOAD_EXTENSIONS, IMAGE_EXTENSIONS
 
 User = get_user_model()
 
 
-class House(FileProcessingMixin, BaseModel):
+class House(FileProcessingMixin, BaseModel, PublishableMixin):
     FILE_FIELDS = {
         'avatar': FileProcessOptions(max_side=1600, quality=75),
     }

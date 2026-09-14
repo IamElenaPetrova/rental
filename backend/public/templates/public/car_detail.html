@@ -1,0 +1,64 @@
+{% extends "public/base.html" %}
+{% load i18n %}
+
+{% block title %}{{ car.get_meta_title }}{% endblock %}
+{% block meta_description %}{{ car.get_meta_description }}{% endblock %}
+
+{% block content %}
+<div class="container">
+  <p class="detail-back"><a href="{% url 'public:car_list' %}">{% trans "← Cars" %}</a></p>
+
+  <div class="detail-layout">
+    <div class="detail-main">
+      <div class="gallery">
+        <div class="gallery__main">
+          {% if car.avatar %}
+          <img src="{{ car.avatar.url }}" alt="{{ car.get_public_title }}" loading="eager">
+          {% endif %}
+        </div>
+        {% with photos=car.photos.all %}
+        {% if photos %}
+        <div class="gallery__thumbs">
+          {% for photo in photos|slice:":6" %}
+          <img src="{{ photo.photo.url }}" alt="" loading="lazy">
+          {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+      </div>
+
+      <h1 class="detail__title">{{ car.get_public_title }}</h1>
+      <p class="detail__facts">
+        {% if car.public_location %}{{ car.public_location }}{% endif %}
+        {% if car.daily_rate_from %}{% if car.public_location %} · {% endif %}${{ car.daily_rate_from }} / {% trans "day" %}{% endif %}
+      </p>
+
+      {% if car.public_description %}
+      <div class="detail__description">{{ car.public_description|linebreaks }}</div>
+      {% endif %}
+    </div>
+
+    <aside class="contact-card contact-card--desktop-only">
+      {% if car.daily_rate_from %}
+      <p class="contact-card__price">
+        ${{ car.daily_rate_from }}
+        <span class="contact-card__price-note">/ {% trans "day" %}</span>
+      </p>
+      {% endif %}
+      <p class="contact-card__note">{% trans "Direct from the owner. No platform fees." %}</p>
+      <button type="button" class="btn btn--dark btn--full btn--disabled" disabled>
+        {% trans "Chat on WhatsApp" %}
+      </button>
+      <p class="contact-card__hint">{% trans "Contact coming soon" %}</p>
+    </aside>
+  </div>
+</div>
+{% endblock %}
+
+{% block mobile_cta %}
+<div class="mobile-cta">
+  <button type="button" class="btn btn--dark btn--full btn--disabled" disabled>
+    {% trans "Chat on WhatsApp" %}
+  </button>
+</div>
+{% endblock %}

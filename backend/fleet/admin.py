@@ -92,13 +92,15 @@ class CarAdmin(admin.ModelAdmin):
         'name',
         'plate_number',
         'is_active',
+        'is_published',
         'last_inspection_date_display',
         'last_insurance_end_date_display',
         'owners_display',
         'created_at',
     )
-    list_filter = ('is_active',)
-    search_fields = ('name', 'plate_number')
+    list_filter = ('is_active', 'is_published')
+    search_fields = ('name', 'plate_number', 'slug', 'public_title')
+    prepopulated_fields = {'slug': ('public_title', 'name')}
     filter_vertical = ('owners',)
     readonly_fields = ('created_at', 'updated_at', 'created_by', 'updated_by')
     inlines = (
@@ -111,6 +113,18 @@ class CarAdmin(admin.ModelAdmin):
     fieldsets = (
         (None, {
             'fields': ('avatar', 'name', 'plate_number', 'owners', 'is_active'),
+        }),
+        ('Public site', {
+            'fields': (
+                'is_published',
+                'slug',
+                'public_title',
+                'public_description',
+                'public_location',
+                'daily_rate_from',
+                'meta_title',
+                'meta_description',
+            ),
         }),
         ('Audit', {
             'fields': ('created_at', 'updated_at', 'created_by', 'updated_by'),

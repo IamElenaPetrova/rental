@@ -1,0 +1,42 @@
+{% extends "public/base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Homes for rent from owners" %}{% endblock %}
+
+{% block content %}
+<div class="container">
+  <header class="page-header">
+    <h1>{% trans "Homes" %}</h1>
+    <p>{% trans "Curated rentals directly from owners" %}</p>
+  </header>
+
+  {% if houses %}
+  <ul class="card-grid">
+    {% for house in houses %}
+    <li>
+      <article class="listing-card">
+        <a class="listing-card__link" href="{% url 'public:house_detail' slug=house.slug %}">
+          <div class="listing-card__media">
+            {% if house.avatar %}
+            <img src="{{ house.avatar.url }}" alt="{{ house.get_public_title }}" loading="lazy">
+            {% endif %}
+          </div>
+          <div class="listing-card__body">
+            <h2 class="listing-card__title">{{ house.get_public_title }}</h2>
+            {% if house.public_location %}
+            <p class="listing-card__location">{{ house.public_location }}</p>
+            {% endif %}
+            {% if house.daily_rate_from %}
+            <p class="listing-card__price">{% trans "from" %} ${{ house.daily_rate_from }} / {% trans "night" %}</p>
+            {% endif %}
+          </div>
+        </a>
+      </article>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="empty-state">{% trans "No homes are listed at the moment." %}</p>
+  {% endif %}
+</div>
+{% endblock %}

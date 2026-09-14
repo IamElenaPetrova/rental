@@ -1,0 +1,38 @@
+{% load i18n static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}{% trans "Rent from owners" %}{% endblock %} · Rental DR</title>
+  <meta name="description" content="{% block meta_description %}{% trans "Curated homes and cars for rent directly from owners in the Dominican Republic." %}{% endblock %}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'public/css/site.css' %}">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="logo" href="{% url 'public:home' %}">Rental DR</a>
+      <nav class="site-nav" aria-label="{% trans 'Main navigation' %}">
+        <a href="{% url 'public:home' %}">{% trans "Home" %}</a>
+        <a href="{% url 'public:car_list' %}">{% trans "Cars" %}</a>
+        <a href="{% url 'public:house_list' %}">{% trans "Homes" %}</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p>{% trans "Curated rentals directly from owners — Dominican Republic" %}</p>
+    </div>
+  </footer>
+
+  {% block mobile_cta %}{% endblock %}
+</body>
+</html>

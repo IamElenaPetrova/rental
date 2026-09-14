@@ -1,0 +1,42 @@
+{% extends "public/base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Cars for rent from owners" %}{% endblock %}
+
+{% block content %}
+<div class="container">
+  <header class="page-header">
+    <h1>{% trans "Cars" %}</h1>
+    <p>{% trans "Curated rentals directly from owners" %}</p>
+  </header>
+
+  {% if cars %}
+  <ul class="card-grid">
+    {% for car in cars %}
+    <li>
+      <article class="listing-card">
+        <a class="listing-card__link" href="{% url 'public:car_detail' slug=car.slug %}">
+          <div class="listing-card__media">
+            {% if car.avatar %}
+            <img src="{{ car.avatar.url }}" alt="{{ car.get_public_title }}" loading="lazy">
+            {% endif %}
+          </div>
+          <div class="listing-card__body">
+            <h2 class="listing-card__title">{{ car.get_public_title }}</h2>
+            {% if car.public_location %}
+            <p class="listing-card__location">{{ car.public_location }}</p>
+            {% endif %}
+            {% if car.daily_rate_from %}
+            <p class="listing-card__price">{% trans "from" %} ${{ car.daily_rate_from }} / {% trans "day" %}</p>
+            {% endif %}
+          </div>
+        </a>
+      </article>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="empty-state">{% trans "No cars are listed at the moment." %}</p>
+  {% endif %}
+</div>
+{% endblock %}

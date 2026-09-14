@@ -70,6 +70,7 @@ INSTALLED_APPS = [
     "djoser",
     "fleet",
     "properties",
+    "public",
     "bookings",
     "finance",
     "api",

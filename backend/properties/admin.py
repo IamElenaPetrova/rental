@@ -60,11 +60,13 @@ class HouseAdmin(admin.ModelAdmin):
         'name',
         'address',
         'is_active',
+        'is_published',
         'owners_display',
         'created_at',
     )
-    list_filter = ('is_active',)
-    search_fields = ('name', 'address', 'comment')
+    list_filter = ('is_active', 'is_published')
+    search_fields = ('name', 'address', 'comment', 'slug', 'public_title')
+    prepopulated_fields = {'slug': ('public_title', 'name')}
     filter_vertical = ('owners',)
     readonly_fields = (
         'created_at',
@@ -82,6 +84,18 @@ class HouseAdmin(admin.ModelAdmin):
                 'owners',
                 'is_active',
                 'comment',
+            ),
+        }),
+        ('Public site', {
+            'fields': (
+                'is_published',
+                'slug',
+                'public_title',
+                'public_description',
+                'public_location',
+                'daily_rate_from',
+                'meta_title',
+                'meta_description',
             ),
         }),
         ('Audit', {

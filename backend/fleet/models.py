@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from django.core.validators import FileExtensionValidator
 from django.db import models
 
-from core.models import BaseModel
+from core.models import BaseModel, PublishableMixin
 from core.file_processing import FileProcessOptions, FileProcessingMixin
 from core.services import (
     ALLOWED_UPLOAD_EXTENSIONS,
@@ -12,7 +12,7 @@ from core.services import (
 User = get_user_model()
 
 
-class Car(FileProcessingMixin, BaseModel):
+class Car(FileProcessingMixin, BaseModel, PublishableMixin):
     FILE_FIELDS = {'avatar': FileProcessOptions(max_side=1600, quality=75)}
     name = models.CharField(
         max_length=255,

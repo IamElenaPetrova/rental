@@ -145,3 +145,6 @@ media/
 images/
 avatars/
 frontend/
+
+docker-compose.override.yml
+nginx/nginx.dev.conf
