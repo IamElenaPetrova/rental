@@ -46,10 +46,16 @@
       </p>
       {% endif %}
       <p class="contact-card__note">{% trans "Direct from the owner. No platform fees." %}</p>
+      {% if house.get_whatsapp_url %}
+      <a class="btn btn--dark btn--full" href="{{ house.get_whatsapp_url }}" target="_blank" rel="noopener">
+        {% trans "Chat on WhatsApp" %}
+      </a>
+      {% else %}
       <button type="button" class="btn btn--dark btn--full btn--disabled" disabled>
         {% trans "Chat on WhatsApp" %}
       </button>
       <p class="contact-card__hint">{% trans "Contact coming soon" %}</p>
+      {% endif %}
     </aside>
   </div>
 </div>
@@ -57,8 +63,14 @@
 
 {% block mobile_cta %}
 <div class="mobile-cta">
+  {% if house.get_whatsapp_url %}
+  <a class="btn btn--dark btn--full" href="{{ house.get_whatsapp_url }}" target="_blank" rel="noopener">
+    {% trans "Chat on WhatsApp" %}
+  </a>
+  {% else %}
   <button type="button" class="btn btn--dark btn--full btn--disabled" disabled>
     {% trans "Chat on WhatsApp" %}
   </button>
+  {% endif %}
 </div>
 {% endblock %}

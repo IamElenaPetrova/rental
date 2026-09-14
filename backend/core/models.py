@@ -77,6 +77,15 @@ class PublishableMixin(models.Model):
         blank=True,
         verbose_name='Daily rate from',
     )
+    contact_phone = models.CharField(
+        max_length=32,
+        blank=True,
+        verbose_name='WhatsApp phone',
+        help_text=(
+            'International format, digits only, e.g. 18095551234 '
+            '(no + or spaces).'
+        ),
+    )
     meta_title = models.CharField(
         max_length=255,
         blank=True,
@@ -106,6 +115,12 @@ class PublishableMixin(models.Model):
             return self.meta_description.strip()
         desc = (self.public_description or '').strip()
         return desc[:512] if desc else ''
+
+    def get_whatsapp_url(self) -> str:
+        digits = ''.join(c for c in (self.contact_phone or '') if c.isdigit())
+        if not digits:
+            return ''
+        return f'https://wa.me/{digits}'
 
     def clean(self):
         super().clean()

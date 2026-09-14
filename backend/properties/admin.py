@@ -94,6 +94,7 @@ class HouseAdmin(admin.ModelAdmin):
                 'public_description',
                 'public_location',
                 'daily_rate_from',
+                'contact_phone',
                 'meta_title',
                 'meta_description',
             ),
